@@ -5,4 +5,8 @@
 
         <Version>0.1.0</Version>
     </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Weald.Core\Weald.Core.csproj"/>
+    </ItemGroup>
 </Project>
