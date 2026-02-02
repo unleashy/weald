@@ -1,7 +1,14 @@
 ﻿using System.Reflection;
+using Weald.Core;
 
 Console.WriteLine($"🌳 Weald v{GetVersion()} // Ctrl+C or .exit to quit");
-Repl(line => Console.WriteLine($"echo {line}"));
+Repl(line => {
+    var source = Source.FromString("<repl>", line);
+
+    foreach (var token in Lexer.Tokenise(source)) {
+        Console.WriteLine(token);
+    }
+});
 
 return;
 
