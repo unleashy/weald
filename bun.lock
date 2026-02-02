@@ -6,6 +6,7 @@
       "name": "@weald/docs",
       "dependencies": {
         "@fontsource-variable/literata": "^5.2.8",
+        "@fontsource-variable/overpass-mono": "^5.2.8",
         "@types/bun": "^1.3.8",
         "github-slugger": "^2.0.0",
         "prettier": "^3.8.1",
@@ -15,6 +16,8 @@
   },
   "packages": {
     "@fontsource-variable/literata": ["@fontsource-variable/literata@5.2.8", "", {}, "sha512-LhxHyo0lDNu2w8FJ7OfTZl6kT8pDYhXiCmWxFAqpUmOqHz1z3OWOaaWBDVOCDOE8b+GWJQX9HYHZ2CERQjjlWA=="],
+
+    "@fontsource-variable/overpass-mono": ["@fontsource-variable/overpass-mono@5.2.8", "", {}, "sha512-8UqIYlv6y1l6d0tuf3ALusV5Y78rjI0f3aEXkaMiWktsQIugKKj7l9RmsdtNZi3u+I+hxKE0a1fAia/G1QPtMA=="],
 
     "@types/bun": ["@types/bun@1.3.8", "", { "dependencies": { "bun-types": "1.3.8" } }, "sha512-3LvWJ2q5GerAXYxO2mffLTqOzEu5qnhEAlh48Vnu8WQfnmSwbgagjGZV6BoHKJztENYEDn6QmVd949W4uESRJA=="],
 

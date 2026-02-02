@@ -17,12 +17,20 @@ Introduction:
 Lexical syntax:
   - >
     This chapter covers the lexical structure of the language. The ◊[source text] of a Weald program
-    is transformed into a linear sequence of disjoint input elements: ◊i[tokens], ◊i[whitespace],
+    is transformed into a linear sequence of disjoint input elements: ◊i[tokens], ◊i[white space],
     ◊i[newlines], and ◊i[comments]. These input elements are produced by analysing the source text’s
     code points, from left-to-right, then taking the longest sequence of code points that match a
     particular input element.
 
   - Source text:
+      - ◊syn:
+          ◊caption: source text
+          Char: ◊p any Unicode code point but not ◊[ForbiddenChar]
+          ForbiddenChar:
+            - ◊p any Control code point but not ◊[Whitespace] or ◊[Newline]
+            - U+2028
+            - U+2029
+
       - >
         The source text of a Weald program is a sequence of Unicode code points, encoded as UTF-8.
         No other encoding is supported.
@@ -30,8 +38,18 @@ Lexical syntax:
         The source text may start with a ◊abbr[byte order mark][BOM] ◊U[FEFF] which is ignored for
         the purposes of lexical analysis.
 
-  - Whitespace:
-      - mac
+        There are certain characters that are ◊syn[forbidden][ForbiddenChar] in source text; if
+        source text contains these characters, even within strings or comments, it is an error. If
+        the literal defines another way to represent a character, such as through an escape, it is
+        allowed, since the literal character is not being represented.
 
-      - And:
-          - CHEESE 🧀
+  - White space:
+      - ◊syn:
+          ◊caption: white space
+          Whitespace:
+            - U+0020
+          Newline:
+            - U+000A
+      - >
+        White space is used to separate input elements. It is otherwise insignificant and should be
+        ignored.
