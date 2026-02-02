@@ -1,0 +1,204 @@
+@font-face {
+  font-family: "Literata Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 900;
+  src: url(@fontsource-variable/literata/files/literata-latin-opsz-normal.woff2) format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Literata Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 900;
+  src: url(@fontsource-variable/literata/files/literata-latin-ext-opsz-normal.woff2) format("woff2");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Literata Variable";
+  font-style: italic;
+  font-display: swap;
+  font-weight: 200 900;
+  src: url(@fontsource-variable/literata/files/literata-latin-opsz-italic.woff2) format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Literata Variable";
+  font-style: italic;
+  font-display: swap;
+  font-weight: 200 900;
+  src: url(@fontsource-variable/literata/files/literata-latin-ext-opsz-italic.woff2) format("woff2");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+:root {
+  --f--2: clamp(0.6914rem, 0.6105rem + 0.3591vw, 0.8889rem);
+  --f--1: clamp(0.7778rem, 0.6869rem + 0.404vw, 1rem);
+  --f-0: clamp(0.875rem, 0.7727rem + 0.4545vw, 1.125rem);
+  --f-1: clamp(0.9844rem, 0.8693rem + 0.5114vw, 1.2656rem);
+  --f-2: clamp(1.1074rem, 0.978rem + 0.5753vw, 1.4238rem);
+  --f-3: clamp(1.2458rem, 1.1002rem + 0.6472vw, 1.6018rem);
+  --f-4: clamp(1.4016rem, 1.2378rem + 0.7281vw, 1.802rem);
+  --leading: 0.333lh;
+  --indent: 0.5rem;
+
+  background: #f8faf8;
+  color: #1d211c;
+  font-family: "Literata Variable", "Sitka Text", Georgia, ui-serif, serif;
+  font-weight: 450;
+  font-size: var(--f-0);
+  line-height: 1.65;
+}
+
+:target {
+  scroll-margin-top: var(--separation, 1lh);
+}
+
+body {
+  max-width: 75ch;
+  margin-inline: auto;
+  margin-block-start: 15vh;
+  margin-block-end: 80vh;
+  padding-inline: 1rem;
+}
+
+a {
+  color: #2a7e3b;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: #b2ddb5;
+  text-underline-offset: 0.15em;
+
+  &:hover {
+    color: #65ba74;
+  }
+
+  &:active,
+  &:focus {
+    background: #2a7e3b;
+    color: #fbfefb;
+  }
+}
+
+:is(h1, h2, h3, h4, h5, h6) {
+  margin-block-start: var(--separation, 1rem);
+  margin-block-end: var(--leading);
+}
+
+h1 {
+  --separation: 6rem;
+  font-size: var(--f-3);
+}
+
+h2 {
+  --separation: 3rem;
+  font-size: var(--f-1);
+}
+
+h3 {
+  --separation: 2rem;
+  font-size: var(--f-0);
+}
+
+:is(h1, h2, h3, h4, h5, h6) > a {
+  color: inherit;
+  text-decoration: none;
+
+  &:hover,
+  &:focus {
+    text-decoration: underline;
+    text-decoration-thickness: 0.1em;
+  }
+}
+
+section p {
+  margin-inline-start: var(--indent);
+}
+
+p + p {
+  margin-block-start: var(--leading);
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+nav ol {
+  list-style: none;
+  counter-reset: item;
+
+  & li {
+    counter-increment: item;
+  }
+
+  & li::marker {
+    content: counters(item, ".") " ";
+    font-weight: 500;
+  }
+}
+
+ul,
+ol {
+  --gap: calc(var(--leading) / 3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  padding-inline-start: var(--indent);
+
+  & :is(ul, ol) {
+    margin-block: var(--gap);
+    padding-inline-start: 2.5rem;
+  }
+}
+
+em {
+  font-style: italic;
+  font-weight: inherit;
+  color: #60655f;
+}
+
+.title {
+  font-size: var(--f-4);
+  font-weight: bold;
+}
+
+.metadata {
+  font-style: italic;
+}
+
+.unicode {
+  --border: #d7dad7;
+  --padding: 0.25ch;
+
+  font-style: normal;
+  font-variant: small-caps;
+  font-size: var(--f--1);
+  letter-spacing: 0.1ch;
+
+  padding-inline: var(--padding);
+
+  border: 1px solid var(--border);
+  border-radius: 0.5ch;
+}

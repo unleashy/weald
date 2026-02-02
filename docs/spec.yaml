@@ -1,0 +1,37 @@
+﻿---
+◊meta:
+  title: Weald 🌳
+  version: 0.1.0
+  non-numbered-headings:
+    - Contents
+---
+Contents:
+  - ◊toc:
+---
+Introduction:
+  - >
+    Weald is a new programming language taking inspiration from C#, Rust, and Ruby.
+
+    This document describes the language—mostly informally.
+---
+Lexical syntax:
+  - >
+    This chapter covers the lexical structure of the language. The ◊[source text] of a Weald program
+    is transformed into a linear sequence of disjoint input elements: ◊i[tokens], ◊i[whitespace],
+    ◊i[newlines], and ◊i[comments]. These input elements are produced by analysing the source text’s
+    code points, from left-to-right, then taking the longest sequence of code points that match a
+    particular input element.
+
+  - Source text:
+      - >
+        The source text of a Weald program is a sequence of Unicode code points, encoded as UTF-8.
+        No other encoding is supported.
+
+        The source text may start with a ◊abbr[byte order mark][BOM] ◊U[FEFF] which is ignored for
+        the purposes of lexical analysis.
+
+  - Whitespace:
+      - mac
+
+      - And:
+          - CHEESE 🧀

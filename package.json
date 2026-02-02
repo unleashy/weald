@@ -1,0 +1,16 @@
+{
+  "name": "@weald/docs",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@fontsource-variable/literata": "^5.2.8",
+    "@types/bun": "^1.3.8",
+    "github-slugger": "^2.0.0",
+    "prettier": "^3.8.1",
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "render": "bun run ./docs/render.ts",
+    "render:watch": "bun --hot run ./docs/render.ts"
+  }
+}
