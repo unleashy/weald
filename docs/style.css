@@ -74,10 +74,18 @@
   --leading: 0.333lh;
   --indent: 0.5rem;
 
-  --colour-black: #1d211c;
-  --colour-white: #fbfefb;
-  --colour-bright-grey: #f8faf8;
-  --colour-grey: #60655f;
+  --colour-grey-12: #1d211c;
+  --colour-grey-1: #fcfdfc;
+  --colour-grey-2: #f8faf8;
+  --colour-grey-11: #60655f;
+  --colour-grey-a6: #00140028;
+  --colour-accent-5: #c9e8ca;
+  --colour-accent-6: #b2ddb5;
+  --colour-accent-9: #46a758;
+  --colour-accent-10: #3e9b4f;
+  --colour-accent-11: #2a7e3b;
+  --colour-accent-a3: #00970016;
+  --colour-accent-a6: #008f0a4d;
 
   --weight-normal: 450;
   --weight-semibold: 550;
@@ -91,8 +99,8 @@
 
   --line-height: 1.65;
 
-  background: var(--colour-bright-grey);
-  color: var(--colour-black);
+  background: var(--colour-grey-2);
+  color: var(--colour-grey-12);
   font-family: var(--font-serif), serif;
   font-weight: var(--weight-normal);
   font-size: var(--f-0);
@@ -111,22 +119,27 @@ body {
 }
 
 a {
-  color: #2a7e3b;
+  color: var(--colour-accent-11);
   font-weight: var(--weight-bold);
   text-decoration: underline;
-  text-decoration-color: #b2ddb5;
+  text-decoration-color: var(--colour-accent-6);
   text-underline-offset: 0.15em;
 
   &:hover {
-    color: #65ba74;
-    text-decoration-color: #b2ddb5;
+    color: var(--colour-accent-9);
+  }
+
+  &:hover,
+  &:active,
+  &:focus {
+    text-decoration-color: var(--colour-accent-6);
     text-decoration-thickness: 2px;
   }
 
   &:active,
   &:focus {
-    background: #2a7e3b;
-    color: var(--colour-white);
+    background: var(--colour-accent-11);
+    color: var(--colour-grey-1);
   }
 }
 
@@ -152,17 +165,18 @@ h3 {
 
 :is(h1, h2, h3, h4, h5, h6) > a {
   color: inherit;
-  text-decoration: none;
+  text-decoration-line: none;
 
   &:hover,
   &:focus {
-    text-decoration: underline;
-    text-decoration-thickness: 0.1em;
+    text-decoration-line: underline;
+    text-decoration-thickness: 2px;
   }
 }
 
 header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   padding-inline: 1rem;
@@ -179,7 +193,7 @@ nav ol {
   & li::marker {
     content: counters(item, ".") " ";
     font-weight: var(--weight-semibold);
-    color: var(--colour-grey);
+    color: var(--colour-grey-11);
   }
 }
 
@@ -200,7 +214,7 @@ ol {
 em {
   font-style: italic;
   font-weight: inherit;
-  color: var(--colour-grey);
+  color: var(--colour-grey-11);
 }
 
 abbr {
@@ -211,6 +225,35 @@ abbr {
   cursor: help;
 }
 
+dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 1ch;
+
+  & > div {
+    display: contents;
+  }
+}
+
+dt {
+  font-weight: var(--weight-bold);
+}
+
+code,
+pre,
+output {
+  font-family: var(--font-mono), monospace;
+  font-size: var(--f--1);
+  line-height: 1.25;
+
+  background: var(--colour-accent-a3);
+  color: var(--colour-accent-11);
+
+  padding-inline: 0.5ch;
+  padding-block-start: 0.33ch;
+  border-radius: 0.25ch;
+}
+
 .title {
   font-size: var(--f-4);
   font-weight: var(--weight-extrabold);
@@ -218,6 +261,15 @@ abbr {
 
 .metadata {
   font-style: italic;
+}
+
+.heading-level {
+  color: var(--colour-grey-11);
+  font-weight: var(--weight-semibold);
+}
+
+a:is(:active, :focus) .heading-level {
+  color: inherit;
 }
 
 .prose {
@@ -230,7 +282,7 @@ abbr {
     padding-inline: var(--prose-padding);
   }
 
-  & > p {
+  & > :is(p, dl) {
     margin-inline-start: var(--indent);
   }
 
@@ -258,9 +310,31 @@ abbr {
   font-style: italic;
 }
 
+@supports (anchor-name: --anchor-rule-name) {
+  .rule {
+    anchor-scope: --anchor-rule-name;
+  }
+
+  .rule-name > a {
+    anchor-name: --anchor-rule-name;
+  }
+
+  .syntax-one-of {
+    position: absolute;
+    position-anchor: --anchor-rule-name;
+    position-area: inline-end;
+
+    display: inline-block;
+    margin-inline-start: 1.5ch;
+
+    font-weight: var(--weight-semibold);
+  }
+}
+
 .syntax-seq {
   display: inline-flex;
   align-items: baseline;
+  flex-wrap: wrap;
   gap: 1ch;
 }
 
@@ -277,15 +351,15 @@ abbr {
 }
 
 .syntax-parens {
-  color: var(--colour-grey);
+  color: var(--colour-grey-11);
 }
 
 .syntax-nonterminal {
   font-family: var(--font-serif), serif;
   font-style: italic;
   font-weight: var(--weight-normal);
-  color: var(--colour-grey);
-  text-decoration-color: #d7dad7;
+  color: var(--colour-grey-11);
+  text-decoration-color: var(--colour-grey-a6);
 }
 
 .syntax-prose,
@@ -300,13 +374,13 @@ abbr {
 
   padding-block: calc(var(--indent) + var(--prose-padding));
 
-  background: #e9f6e9;
-  border: 1px solid #c9e8ca;
+  background: var(--colour-accent-a3);
+  border: 1px solid var(--colour-accent-5);
   border-radius: 0.5ch;
 
   & .syntax-nonterminal:not(:hover, :focus, :active) {
     color: inherit;
-    text-decoration: none;
+    text-decoration-line: none;
   }
 }
 
@@ -320,16 +394,17 @@ abbr {
 }
 
 .rule-name {
-  line-height: 1.2;
+  line-height: 1.25;
 
   &::after {
     content: ":";
     font-style: italic;
+    font-weight: var(--weight-normal);
   }
 
   & .syntax-nonterminal:not(:hover, :focus, :active) {
-    text-decoration: none;
-    color: var(--colour-black);
+    color: var(--colour-grey-12);
+    text-decoration-line: none;
   }
 }
 
@@ -354,6 +429,5 @@ abbr {
 }
 
 ::selection {
-  background: #3e9b4f;
-  color: #fbfefb;
+  background: var(--colour-accent-a6);
 }

@@ -80,3 +80,62 @@ Lexical syntax:
         Comments are treated like white space and are ignored. The newline at the end of line
         comments is emitted as a normal newline token; newlines within block comments are also
         emitted.
+
+  - Tokens:
+      - ◊syn:
+          ◊caption: tokens
+          Token:
+            - NameOrKeyword
+            - Punctuation
+            - Number
+            - String
+      - >
+        Tokens are the main input elements consumed by the parser. They include names, keywords,
+        punctuation, numbers, and strings.
+
+  - Names and keywords:
+      - ◊syn:
+          ◊caption: names
+          NameOrKeyword:
+            - Name but not Keyword
+            - Keyword
+          Name: NameStart NameContinue* (NameMedial NameContinue+)* NameFinal
+          NameStart:
+            - ◊p XID_Start
+            - U+005F
+          NameContinue: ◊p XID_Continue
+          NameMedial: U+002D
+          NameFinal:
+            - U+003F
+            - U+0021
+      - >
+        Names (also called identifiers) are used to refer to variables, types, and other entities in
+        a program. They follow ◊[UAX31-R1-1][https://www.unicode.org/reports/tr31/#R1] with the
+        following profile, incorporating the Mathematical Compatibility Notation profile:
+      - ◊dl:
+          Start: XID_Start, plus ID_Compat_Math_Start, plus ◊code[_] underscore
+          Continue: XID_Continue, plus ID_Compat_Math_Continue (this includes underscore)
+          Medial: ◊code[-] hyphen-minus
+      - Names may also be suffixed with at most one of `?` question mark or `!` exclamation point.
+      - >
+        The value of a name is the result of normalising its code points using Normalization Form C.
+        Therefore, two names are equal if their NFC forms are equal.
+
+      - Keywords:
+          - ◊syn:
+              ◊caption: keywords
+              Keyword:
+                - "`todo`"
+          - >
+            Keywords are names used by the compiler to denote syntax in a program. Trying to use a
+            name that is equal to a keyword is an error.
+
+  - Punctuation:
+      - ◊syn:
+          ◊caption: punctuation
+          Punctuation: ◊one-of ( ) [ ] { }
+      - >
+        Punctuators are used to mark or separate syntactic constructs in a program. While only some
+        punctuators are currently used, every ASCII code point that is also Pattern_Syntax is
+        reserved for future use; this is a profile of
+        ◊[UAX-R3b-1][https://www.unicode.org/reports/tr31/#R3b].

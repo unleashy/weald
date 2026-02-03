@@ -12,7 +12,7 @@ export function parseTerms(rule: string): RootTerm {
   return root(rule);
 }
 
-// Root: Seq End
+// Root: ButNot End
 // Ws: [\s]*
 function root(s: string) {
   let [result, end] = butNot(s);
