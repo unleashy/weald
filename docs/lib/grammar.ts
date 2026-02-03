@@ -1,26 +1,39 @@
 export type Quantifier = "*" | "+" | "?";
 
-export type Term =
-  | {
-      type: "nonterminal" | "terminal" | "unicode";
-      value: string;
-      quantifier?: Quantifier;
-    }
-  | { type: "group"; value: Term[]; quantifier?: Quantifier };
+export type RootTerm =
+  | { type: "seq"; terms: Term[] }
+  | { type: "but-not"; left: Term[]; right: Term[] };
 
-export function parseTerms(rule: string): Term[] {
+export type Term =
+  | { type: "nonterminal" | "terminal" | "unicode"; value: string; quantifier?: Quantifier }
+  | { type: "group"; value: RootTerm; quantifier?: Quantifier };
+
+export function parseTerms(rule: string): RootTerm {
   return root(rule);
 }
 
 // Root: Seq End
 // Ws: [\s]*
 function root(s: string) {
-  let [result, end] = seq(s);
+  let [result, end] = butNot(s);
   if (!/^\s*$/.test(end)) {
     throw new SyntaxError(`expected end of input at ${JSON.stringify(end)}`);
   }
 
   return result;
+}
+
+// ButNot: Seq (Ws `but` Ws `not` Seq)?
+function butNot(s: string) {
+  let left;
+  [left, s] = seq(s);
+
+  let m = s.match(/^\s*but\s+not/);
+  if (!m) return [left, s] as const;
+
+  let right;
+  [right, s] = seq(s.slice(m[0].length));
+  return [{ type: "but-not", left: left.terms, right: right.terms }, s] as const;
 }
 
 // Seq: QuantifiableTerm*
@@ -32,7 +45,7 @@ function seq(s: string) {
     terms.push(qt);
   }
 
-  return [terms, s] as const;
+  return [{ type: "seq", terms }, s] as const;
 }
 
 // QuantifiableTerm: Term Quantifier?
@@ -95,6 +108,8 @@ function terminal(s: string) {
 
 // Nonterminal: Ws [A-Za-z_] [A-Za-z0-9_]*
 function nonterminal(s: string) {
+  if (isButNot(s)) return undefined;
+
   let m = s.match(/^[A-Za-z_][A-Za-z0-9_]*/);
   if (!m) return undefined;
 
@@ -128,4 +143,8 @@ function group(s: string) {
   }
 
   return [{ type: "group", value }, s.slice(1)] as const;
+}
+
+function isButNot(s: string) {
+  return /^\bbut\s+not\b/.test(s);
 }

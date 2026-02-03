@@ -281,13 +281,15 @@ abbr {
 }
 
 .syntax-nonterminal {
+  font-family: var(--font-serif), serif;
   font-style: italic;
   font-weight: var(--weight-normal);
   color: var(--colour-grey);
   text-decoration-color: #d7dad7;
 }
 
-.syntax-prose {
+.syntax-prose,
+.syntax-but-not {
   line-height: var(--line-height);
 }
 

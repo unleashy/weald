@@ -1,6 +1,6 @@
 import Slugger, { slug } from "github-slugger";
 import { unicodeName } from "unicode-name";
-import { parseTerms, type Term } from "./lib/grammar.ts";
+import { parseTerms, type RootTerm, type Term } from "./lib/grammar.ts";
 import spec from "./spec.yaml" with { type: "yaml" };
 import html from "./spec.html" with { type: "html" };
 
@@ -233,8 +233,21 @@ class Renderer {
   }
 
   #renderSyntaxDef(def: string): string {
+    let renderRootTerm: (s: string[], term: RootTerm) => void;
     let renderTerms: (s: string[], terms: Term[]) => void;
     let renderTerm: (s: string[], term: Term) => void;
+
+    renderRootTerm = (s: string[], term: RootTerm) => {
+      if (term.type === "but-not") {
+        s.push(`<span class="syntax-seq">`);
+        renderTerms(s, term.left);
+        s.push(`<span class="syntax-but-not">but not</span>`);
+        renderTerms(s, term.right);
+        s.push(`</span>`);
+      } else {
+        renderTerms(s, term.terms);
+      }
+    };
 
     renderTerms = (s: string[], terms: Term[]) => {
       s.push(`<span class="syntax-seq">`);
@@ -249,7 +262,7 @@ class Renderer {
 
       if (term.type === "group") {
         s.push(`<span class="syntax-parens">(</span>`);
-        renderTerms(s, term.value);
+        renderRootTerm(s, term.value);
         s.push(`<span class="syntax-parens">)</span>`);
       } else if (term.type === "nonterminal") {
         let ref = this.#findRefOf("syntax", term.value);
@@ -273,16 +286,16 @@ class Renderer {
       }
     };
 
-    let terms;
+    let rootTerm;
     try {
-      terms = parseTerms(def);
+      rootTerm = parseTerms(def);
     } catch (e) {
       if (!(e instanceof SyntaxError)) throw e;
       return errorTag(e.message);
     }
 
     let s: string[] = [];
-    renderTerms(s, terms);
+    renderRootTerm(s, rootTerm);
     return s.join("");
   }
 

@@ -30,7 +30,7 @@ Lexical syntax:
             - ◊p any Control code point but not ◊[Whitespace] or ◊[Newline]
             - U+2028
             - U+2029
-
+          End: ◊p the physical end of input
       - >
         The source text of a Weald program is a sequence of Unicode code points, encoded as UTF-8.
         No other encoding is supported.
@@ -59,7 +59,24 @@ Lexical syntax:
           Newline:
             - U+000A
             - U+000D U+000A
+          Newlines: Newline+
       - >
         Newlines are used to separate statements from one another. The only newline characters
         allowed are line feed and carriage return immediately followed by a line feed, i.e. either
         Unix-style LF or Windows-style CRLF.
+
+  - Comments:
+      - ◊syn:
+          ◊caption: comments
+          Comment:
+            - "`//` LineCommentChar* CommentEnd"
+            - "`/*` BlockCommentChar* `*/`"
+          LineCommentChar: Char but not Newline
+          BlockCommentChar: Char but not `*/`
+          CommentEnd:
+            - Newline
+            - End
+      - >
+        Comments are treated like white space and are ignored. The newline at the end of line
+        comments is emitted as a normal newline token; newlines within block comments are also
+        emitted.
