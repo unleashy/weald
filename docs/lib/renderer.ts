@@ -3,11 +3,17 @@ import { unicodeName } from "unicode-name";
 import { parseTerms, type RootTerm, type Term } from "./grammar.ts";
 
 type Children = Array<Record<string, unknown> | string>;
-type Ref =
-  | { kind: "section"; name: string; slug: string; levelStack: number[] }
-  | { kind: "syntax"; name: string; slug: string };
 
-type RefOf<K extends Ref["kind"]> = Extract<Ref, { kind: K }>;
+interface Ref {
+  name: string;
+  slug: string;
+}
+
+interface SectionRef extends Ref {
+  levelStack: number[];
+}
+
+interface SyntaxRef extends Ref {}
 
 // language=html
 const BOILERPLATE = `
@@ -27,7 +33,8 @@ const BOILERPLATE = `
 export class Renderer {
   readonly #slugger: Slugger = new Slugger();
   #output: string[] = [];
-  #refs: Ref[] = [];
+  #sectionRefs: SectionRef[] = [];
+  #syntaxRefs: Map<string, SyntaxRef> = new Map();
   #nonNumberedHeadings: string[] = [];
 
   render(spec: Array<Record<string, unknown>>): string {
@@ -35,13 +42,14 @@ export class Renderer {
     let meta = spec[0]["◊meta"] as Record<string, unknown>;
 
     this.#output = [BOILERPLATE];
-    this.#refs = [];
+    this.#sectionRefs = [];
+    this.#syntaxRefs.clear();
     this.#nonNumberedHeadings = Array.isArray(meta["non-numbered-headings"])
       ? meta["non-numbered-headings"]
       : [];
 
     this.#collectRefs(spec.slice(1), [1]);
-    this.#renderChildren(spec.slice(1));
+    this.#renderChildren(spec.slice(1), 1);
 
     return this.#output
       .join("\n")
@@ -60,7 +68,7 @@ export class Renderer {
       .trim();
   }
 
-  #renderChildren(children: unknown[]) {
+  #renderChildren(children: unknown[], level: number) {
     for (let child of children) {
       if (typeof child === "object") {
         let entries = Object.entries(child ?? {});
@@ -75,7 +83,7 @@ export class Renderer {
         if (key.startsWith("◊")) {
           this.#renderTag(key.substring(1), value);
         } else {
-          this.#renderSection(key, value);
+          this.#renderSection(key, value, level);
         }
       } else if (typeof child === "string") {
         this.#renderParagraph(child);
@@ -85,12 +93,15 @@ export class Renderer {
     }
   }
 
-  #renderSection(header: string, value: unknown) {
-    let section = this.#findRefOf("section", header);
-    if (section === undefined) {
+  #renderSection(header: string, value: unknown, level: number) {
+    let sections = this.#findSectionRef(header).filter((it) => it.levelStack.length === level);
+    if (sections.length === 0) {
       return this.#renderError(`Section not found: '${header}'`);
+    } else if (sections.length > 1) {
+      return this.#renderError(`Ambiguous section '${header}'`);
     }
 
+    let section = sections[0];
     let slug = section.slug;
     let name = section.name;
 
@@ -104,7 +115,7 @@ export class Renderer {
     this.#output.push(`<${tag}><a href="#${slug}">${prefix}${name}</a></${tag}>`);
 
     if (Array.isArray(value)) {
-      this.#renderChildren(value);
+      this.#renderChildren(value, level + 1);
     } else if (typeof value === "string") {
       this.#renderTag("p", value);
     }
@@ -115,7 +126,7 @@ export class Renderer {
   #renderTag(name: string, value: unknown) {
     switch (name) {
       case "dl":
-        return this.#renderDeflist(value);
+        return this.#renderDefinitionList(value);
 
       case "p":
         return this.#renderParagraph(value);
@@ -131,7 +142,7 @@ export class Renderer {
     }
   }
 
-  #renderDeflist(value: unknown) {
+  #renderDefinitionList(value: unknown) {
     if (!isObject(value)) {
       this.#renderError("◊dl tag with non-object contents");
       return;
@@ -241,7 +252,7 @@ export class Renderer {
   #renderRuleHeader(rule: string): boolean {
     if (rule.startsWith("◊")) return false;
 
-    let ref = this.#findRefOf("syntax", rule);
+    let ref = this.#findSyntaxRef(rule);
     if (ref === undefined) {
       this.#renderError(`Syntax rule not found: '${rule}'`);
       return false;
@@ -258,10 +269,8 @@ export class Renderer {
   }
 
   #renderToc() {
-    let sections: Array<RefOf<"section">> = this.#refs.filter((s) => s.kind === "section");
-
     const childrenOfLevel = (levelStack: number[]) => {
-      return sections
+      return this.#sectionRefs
         .filter((it) => Bun.deepEquals(levelStack, it.levelStack.slice(1)))
         .filter((it) => this.#isNumbered(it.name));
     };
@@ -315,7 +324,7 @@ export class Renderer {
         renderRootTerm(s, term.value);
         s.push(`<span class="syntax-parens">)</span>`);
       } else if (term.type === "nonterminal") {
-        let ref = this.#findRefOf("syntax", term.value);
+        let ref = this.#findSyntaxRef(term.value);
         if (ref === undefined) {
           s.push(errorTag(`Unknown ref '${term.value}'`));
           s.push(`</span>`);
@@ -397,12 +406,14 @@ export class Renderer {
     if (href.startsWith("https://") || href.startsWith("http://")) {
       return `<a href="${href}" target="_blank" rel="noopener noreferrer external">${body}</a>`;
     } else {
-      let ref = this.#findRef(href);
-      if (ref === undefined) {
+      let ref = this.#findSectionRef(href);
+      if (ref.length === 0) {
         return errorTag(`◊a: Unknown ref '${href}' (slug: '${slug(href)}')`);
+      } else if (ref.length > 1) {
+        return errorTag(`◊a: Ambiguous ref '${href}' (slug: '${slug(href)}')`);
       }
 
-      return `<a href="#${ref.slug}">${body}</a>`;
+      return `<a href="#${ref[0].slug}">${body}</a>`;
     }
   }
 
@@ -411,7 +422,7 @@ export class Renderer {
 
     href ??= body;
 
-    let ref = this.#findRefOf("syntax", href);
+    let ref = this.#findSyntaxRef(href);
     if (ref === undefined) {
       return errorTag(`◊syn: Unknown ref '${href}' (slug: '${slug(href)}')`);
     }
@@ -463,49 +474,63 @@ export class Renderer {
 
   #collectSyntaxRefs(rules: Record<string, unknown>) {
     for (let [name, _] of Object.entries(rules)) {
-      this.#addSyntaxRef(name);
+      if (name.startsWith("◊")) continue;
+      if (!this.#addSyntaxRef(name)) {
+        this.#alert(`Duplicate syntax reference '${name}'`);
+      }
     }
   }
 
   #collectSectionRefs(name: string, children: Children, levelStack: number[]) {
     let ref = this.#addSectionRef(name, levelStack);
+    if (!ref) {
+      this.#alert(`Duplicate section reference '${name}'`);
+    }
+
     this.#collectRefs(children, [1, ...levelStack]);
-    if (this.#isNumbered(ref.name)) ++levelStack[0];
+    if (ref && this.#isNumbered(ref.name)) ++levelStack[0];
   }
 
-  #findRef(name: string): Ref | undefined {
+  #findSectionRef(name: string): SectionRef[] {
     let nameSlug = slug(name);
-    return this.#refs.find((s) => slug(s.name) === nameSlug);
+    return this.#sectionRefs.filter((s) => slug(s.name) === nameSlug);
   }
 
-  #findRefOf<K extends Ref["kind"]>(kind: K, name: string): RefOf<K> | undefined {
-    let nameSlug = slug(name);
-    return this.#refs.find((s) => s.kind === kind && slug(s.name) === nameSlug) as RefOf<K>;
+  #findSyntaxRef(name: string): SyntaxRef | undefined {
+    return this.#syntaxRefs.get(slug(name, true));
   }
 
-  #addSectionRef(name: string, levelStack: number[]): Ref {
-    let ref: Ref = {
+  #addSectionRef(name: string, levelStack: number[]): SectionRef {
+    let ref: SectionRef = {
       name,
       slug: this.#slugger.slug(`sec-${name}`, true),
-      kind: "section",
       levelStack: levelStack.slice(),
     };
-    this.#refs.push(ref);
+
+    this.#sectionRefs.push(ref);
+
     return ref;
   }
 
-  #addSyntaxRef(name: string): Ref {
-    let ref: Ref = {
+  #addSyntaxRef(name: string): SyntaxRef | undefined {
+    let s = slug(name, true);
+    if (this.#syntaxRefs.has(s)) return undefined;
+
+    let ref: SyntaxRef = {
       name,
-      slug: this.#slugger.slug(`syn-${name}`, true),
-      kind: "syntax",
+      slug: `syn-${s}`,
     };
-    this.#refs.push(ref);
+
+    this.#syntaxRefs.set(s, ref);
     return ref;
   }
 
   #isNumbered(name: string): boolean {
     return !this.#nonNumberedHeadings.includes(name);
+  }
+
+  #alert(message: string) {
+    this.#output.push(`<p>${errorTag(`Ref collection error: ${message}`)}</p>`);
   }
 }
 
