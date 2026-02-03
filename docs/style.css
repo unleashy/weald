@@ -119,6 +119,8 @@ a {
 
   &:hover {
     color: #65ba74;
+    text-decoration-color: #b2ddb5;
+    text-decoration-thickness: 2px;
   }
 
   &:active,
@@ -201,6 +203,14 @@ em {
   color: var(--colour-grey);
 }
 
+abbr {
+  text-decoration: underline dashed;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+
+  cursor: help;
+}
+
 .title {
   font-size: var(--f-4);
   font-weight: var(--weight-extrabold);
@@ -256,11 +266,13 @@ em {
 
 .syntax-parens,
 .syntax-terminal,
+.syntax-unicode,
 .syntax-quantifier {
   font-family: var(--font-mono), monospace;
 }
 
-.syntax-terminal {
+.syntax-terminal,
+.syntax-unicode {
   font-weight: var(--weight-bold);
 }
 
@@ -272,6 +284,7 @@ em {
   font-style: italic;
   font-weight: var(--weight-normal);
   color: var(--colour-grey);
+  text-decoration-color: #d7dad7;
 }
 
 .syntax-prose {
@@ -312,13 +325,9 @@ em {
     font-style: italic;
   }
 
-  & .syntax-nonterminal {
-    text-decoration-color: currentColor;
-
-    &:not(:hover, :focus, :active) {
-      text-decoration: none;
-      color: var(--colour-black);
-    }
+  & .syntax-nonterminal:not(:hover, :focus, :active) {
+    text-decoration: none;
+    color: var(--colour-black);
   }
 }
 
@@ -330,21 +339,16 @@ em {
   line-height: 1.25;
 }
 
-.unicode {
-  --border: #d7dad7;
-  --padding: 0.25ch;
-
+.unicode,
+.syntax-unicode {
   font-style: normal;
-  font-weight: var(--weight-semibold);
-  font-size: var(--f--2);
+  font-variant-numeric: tabular-nums;
   letter-spacing: 0.1ch;
 }
 
-.unicode-emphasis {
-  padding-inline: var(--padding);
-
-  border: 1px solid var(--border);
-  border-radius: 0.5ch;
+.unicode {
+  font-size: var(--f--2);
+  font-weight: var(--weight-semibold);
 }
 
 ::selection {

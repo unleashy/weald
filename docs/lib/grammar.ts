@@ -1,7 +1,11 @@
 export type Quantifier = "*" | "+" | "?";
 
 export type Term =
-  | { type: "nonterminal" | "terminal"; value: string; quantifier?: Quantifier }
+  | {
+      type: "nonterminal" | "terminal" | "unicode";
+      value: string;
+      quantifier?: Quantifier;
+    }
   | { type: "group"; value: Term[]; quantifier?: Quantifier };
 
 export function parseTerms(rule: string): Term[] {
@@ -78,12 +82,12 @@ function terminal(s: string) {
 
     return [{ type: "terminal", value: s.slice(1, end) }, s.slice(end + 1)] as const;
   } else if (s.startsWith("U+")) {
-    let m = s.match(/^U\+[0-9A-Fa-f]{1,6}/);
+    let m = s.match(/^U\+([0-9A-Fa-f]{1,6})/);
     if (!m) {
       throw new SyntaxError(`bad unicode code point: ${JSON.stringify(s)}`);
     }
 
-    return [{ type: "terminal", value: m[0] }, s.slice(m[0].length)] as const;
+    return [{ type: "unicode", value: m[1] }, s.slice(m[0].length)] as const;
   } else {
     return undefined;
   }

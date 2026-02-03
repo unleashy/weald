@@ -6,9 +6,11 @@
     "@fontsource-variable/literata": "^5.2.8",
     "@fontsource-variable/overpass-mono": "^5.2.8",
     "@types/bun": "^1.3.8",
+    "@types/unicode-name": "^1.1.0",
     "github-slugger": "^2.0.0",
     "prettier": "^3.8.1",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "unicode-name": "^1.1.0"
   },
   "scripts": {
     "render": "bun run ./docs/render.ts",

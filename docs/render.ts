@@ -1,4 +1,5 @@
 import Slugger, { slug } from "github-slugger";
+import { unicodeName } from "unicode-name";
 import { parseTerms, type Term } from "./lib/grammar.ts";
 import spec from "./spec.yaml" with { type: "yaml" };
 import html from "./spec.html" with { type: "html" };
@@ -258,6 +259,10 @@ class Renderer {
         }
 
         s.push(`<a href="#${ref.slug}" class="syntax-${term.type}">${ref.name}</a>`);
+      } else if (term.type === "unicode") {
+        s.push(
+          `<abbr title="${nameCodePoint(term.value)}" class="syntax-unicode">U+${term.value}</abbr>`,
+        );
       } else {
         s.push(`<span class="syntax-${term.type}">${term.value}</span>`);
       }
@@ -346,9 +351,9 @@ class Renderer {
     return `<a href="${href}" class="syntax-nonterminal">${body}</a>`;
   }
 
-  #renderAbbreviation(body: string | undefined, abbr: string | undefined): string {
-    if (body === undefined) return errorTag("◊abbr tag missing body");
+  #renderAbbreviation(abbr: string | undefined, body: string | undefined): string {
     if (abbr === undefined) return errorTag("◊abbr tag missing abbreviation");
+    if (body === undefined) return errorTag("◊abbr tag missing body");
 
     return `<abbr title="${body}">${abbr}</abbr>`;
   }
@@ -360,7 +365,8 @@ class Renderer {
 
   #renderUnicode(s: string | undefined): string {
     if (s === undefined) return errorTag("◊u tag missing body");
-    return `<i class="unicode unicode-emphasis">U+${s}</i>`;
+
+    return `<abbr title="${nameCodePoint(s)}" class="unicode">U+${s}</abbr>`;
   }
 
   #collectRefs(children: Children, levelStack: number[]) {
@@ -433,6 +439,12 @@ function errorTag(message: string): string {
 
 function escapeHtml(s: string): string {
   return s.replaceAll("&", "&amp;").replaceAll("<", "&lt;");
+}
+
+function nameCodePoint(s: string): string {
+  return (
+    unicodeName(String.fromCodePoint(Number.parseInt(s, 16)))?.toLowerCase() ?? "unknown character"
+  );
 }
 
 function isObject(x: unknown): x is Record<string, unknown> {

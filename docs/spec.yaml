@@ -35,7 +35,7 @@ Lexical syntax:
         The source text of a Weald program is a sequence of Unicode code points, encoded as UTF-8.
         No other encoding is supported.
 
-        The source text may start with a ◊abbr[byte order mark][BOM] ◊U[FEFF] which is ignored for
+        The source text may start with a ◊abbr[BOM][byte order mark] ◊U[FEFF] which is ignored for
         the purposes of lexical analysis.
 
         There are certain characters that are ◊syn[forbidden][ForbiddenChar] in source text; if
@@ -48,8 +48,18 @@ Lexical syntax:
           ◊caption: white space
           Whitespace:
             - U+0020
-          Newline:
-            - U+000A
+            - U+0009
       - >
         White space is used to separate input elements. It is otherwise insignificant and should be
-        ignored.
+        ignored. The only white space characters allowed are space and tab.
+
+  - Newlines:
+      - ◊syn:
+          ◊caption: newlines
+          Newline:
+            - U+000A
+            - U+000D U+000A
+      - >
+        Newlines are used to separate statements from one another. The only newline characters
+        allowed are line feed and carriage return immediately followed by a line feed, i.e. either
+        Unix-style LF or Windows-style CRLF.
