@@ -95,31 +95,37 @@ Lexical syntax:
 
   - Names and keywords:
       - ◊syn:
-          ◊caption: names
+          ◊caption: names and keywords
           NameOrKeyword:
             - Name but not Keyword
             - Keyword
-          Name: NameStart NameContinue* (NameMedial NameContinue+)* NameFinal
-          NameStart:
-            - ◊p XID_Start
-            - U+005F
-          NameContinue: ◊p XID_Continue
-          NameMedial: U+002D
-          NameFinal:
-            - U+003F
-            - U+0021
       - >
         Names (also called identifiers) are used to refer to variables, types, and other entities in
-        a program. They follow ◊[UAX31-R1-1][https://www.unicode.org/reports/tr31/#R1] with the
-        following profile, incorporating the Mathematical Compatibility Notation profile:
-      - ◊dl:
-          Start: XID_Start, plus ID_Compat_Math_Start, plus ◊code[_] underscore
-          Continue: XID_Continue, plus ID_Compat_Math_Continue (this includes underscore)
-          Medial: ◊code[-] hyphen-minus
-      - Names may also be suffixed with at most one of `?` question mark or `!` exclamation point.
-      - >
-        The value of a name is the result of normalising its code points using Normalization Form C.
-        Therefore, two names are equal if their NFC forms are equal.
+        a program. Keywords are instances of names reserved for denoting syntactical constructs. The
+        value of a user-defined name must not be equal to any keyword.
+      - Both names and keywords are case-sensitive.
+      - Names:
+          - ◊syn:
+              ◊caption: names
+              Name: NameStart NameContinue* (NameMedial NameContinue+)* NameFinal
+              NameStart:
+                - ◊p XID_Start
+                - "`_`"
+              NameContinue: ◊p XID_Continue
+              NameMedial: "`-`"
+              NameFinal: ◊one-of ? !
+          - >
+            Names follow ◊[UAX31-R1-1][https://www.unicode.org/reports/tr31/#R1] with the following
+            profile, incorporating the Mathematical Compatibility Notation profile:
+          - ◊dl:
+              Start: XID_Start, plus ID_Compat_Math_Start, plus ◊code[_] underscore
+              Continue: XID_Continue, plus ID_Compat_Math_Continue (this includes underscore)
+              Medial: ◊code[-] hyphen-minus
+          - Names may also be suffixed with at most one of question mark ◊code[?] or exclamation
+            point ◊code[!].
+          - >
+            The value of a name is the result of normalising its code points using Normalisation
+            Form C. Therefore, two names are equal if their NFC forms are equal.
 
       - Keywords:
           - ◊syn:
@@ -127,8 +133,8 @@ Lexical syntax:
               Keyword:
                 - "`todo`"
           - >
-            Keywords are names used by the compiler to denote syntax in a program. Trying to use a
-            name that is equal to a keyword is an error.
+            All code points in any keyword are in the ASCII range, and no new keyword will be
+            defined with code points outside that range.
 
   - Punctuation:
       - ◊syn:
