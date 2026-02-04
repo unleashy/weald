@@ -15,27 +15,6 @@ interface SectionRef extends Ref {
 
 interface SyntaxRef extends Ref {}
 
-// language=html
-const SHELL = `
-<!DOCTYPE html>
-<html lang="en-GB">
-<head>
-  <meta charset="utf-8">
-  <link rel="stylesheet" href="style.css">
-  <title>◊title</title>
-</head>
-<body>
-<header>
-  <p class="title">◊title</p>
-  <p class="metadata">Version ◊version / ◊date</p>
-</header>
-<main>
-◊main
-</main>
-</body>
-</html>
-`;
-
 export class Renderer {
   readonly #slugger: Slugger = new Slugger();
   #output: string[] = [];
@@ -43,36 +22,64 @@ export class Renderer {
   #syntaxRefs: Map<string, SyntaxRef> = new Map();
   #nonNumberedHeadings: string[] = [];
 
-  render(spec: Array<Record<string, unknown>>): string {
-    let renderDate = new Date().toISOString().split("T")[0];
-    let meta = spec[0]["◊meta"] as Record<string, unknown>;
+  render(
+    spec: Array<Record<string, unknown>>,
+    shell: string,
+    getProps: (
+      output: string,
+      toc: string,
+      meta: Record<string, string>,
+    ) => Record<string, string | undefined>,
+  ): string {
+    let meta = spec[0]?.["◊meta"] as Record<string, string> | undefined;
+    if (!isObject(meta)) {
+      throw new Error("No metadata found");
+    }
 
-    this.#output = [];
-    this.#sectionRefs = [];
-    this.#syntaxRefs.clear();
+    let rest = spec.slice(1);
+
     this.#nonNumberedHeadings = Array.isArray(meta["non-numbered-headings"])
       ? meta["non-numbered-headings"]
       : [];
 
-    this.#collectRefs(spec.slice(1), [1]);
-    this.#renderChildren(spec.slice(1), 1);
+    this.#collectRefs(rest);
+    let out = this.#renderOutput(rest);
+    let toc = this.#renderToc();
 
-    let main = this.#output.join("\n");
+    let props = getProps(out, toc, meta);
+    return shell.replaceAll(/◊(\w+)/gu, (s, prop) => props[prop] ?? s).trim();
+  }
 
-    return SHELL.replaceAll(/◊(\w+)/gu, (matched, prop) => {
-      switch (prop) {
-        case "title":
-          return String(meta.title ?? "");
-        case "version":
-          return String(meta.version ?? "");
-        case "date":
-          return renderDate;
-        case "main":
-          return main;
-        default:
-          return matched;
+  #renderToc(): string {
+    let tocOutput: string[] = [];
+
+    const childrenOfLevel = (levelStack: number[]) => {
+      return this.#sectionRefs
+        .filter((it) => Bun.deepEquals(levelStack, it.levelStack.slice(1)))
+        .filter((it) => this.#isNumbered(it.name));
+    };
+
+    const renderTocSection = (levelStack: number[]) => {
+      let children = childrenOfLevel(levelStack);
+      if (children.length === 0) return;
+
+      tocOutput.push("<ol>");
+      for (let section of children) {
+        tocOutput.push(`<li><a href="#${section.slug}">${section.name}</a>`);
+        renderTocSection(section.levelStack);
+        tocOutput.push("</li>");
       }
-    }).trim();
+      tocOutput.push("</ol>");
+    };
+
+    renderTocSection([]);
+    return tocOutput.join("\n");
+  }
+
+  #renderOutput(spec: unknown[]): string {
+    this.#output = [];
+    this.#renderChildren(spec, 1);
+    return this.#output.join("\n");
   }
 
   #renderChildren(children: unknown[], level: number) {
@@ -112,7 +119,7 @@ export class Renderer {
     let slug = section.slug;
     let name = section.name;
 
-    let tag = `h${section.levelStack.length}`;
+    let tag = `h${1 + section.levelStack.length}`;
     let dottedLevel = section.levelStack.toReversed().join(".");
     let prefix = this.#isNumbered(section.name)
       ? `<span class="heading-level">${dottedLevel}</span>&nbsp;`
@@ -143,9 +150,6 @@ export class Renderer {
 
       case "syn":
         return this.#renderSyntax(value);
-
-      case "toc":
-        return this.#renderToc();
 
       default:
         return this.#renderError(`Unknown tag ◊${name}`);
@@ -290,31 +294,6 @@ export class Renderer {
     );
 
     return true;
-  }
-
-  #renderToc() {
-    const childrenOfLevel = (levelStack: number[]) => {
-      return this.#sectionRefs
-        .filter((it) => Bun.deepEquals(levelStack, it.levelStack.slice(1)))
-        .filter((it) => this.#isNumbered(it.name));
-    };
-
-    const renderTocSection = (levelStack: number[]) => {
-      let children = childrenOfLevel(levelStack);
-      if (children.length === 0) return;
-
-      this.#output.push("<ol>");
-      for (let section of children) {
-        this.#output.push(`<li><a href="#${section.slug}">${section.name}</a>`);
-        renderTocSection(section.levelStack);
-        this.#output.push("</li>");
-      }
-      this.#output.push("</ol>");
-    };
-
-    this.#output.push("<nav>");
-    renderTocSection([]);
-    this.#output.push("</nav>");
   }
 
   #renderGrammar(def: string): string {
@@ -486,7 +465,13 @@ export class Renderer {
     return `<${tag}>${s}</${tag}>`;
   }
 
-  #collectRefs(children: Children, levelStack: number[]) {
+  #collectRefs(children: Children) {
+    this.#sectionRefs = [];
+    this.#syntaxRefs = new Map();
+    this.#collectRefsWithLevel(children, [1]);
+  }
+
+  #collectRefsWithLevel(children: Children, levelStack: number[]) {
     for (let child of children) {
       for (let [key, value] of Object.entries(child)) {
         if (key.startsWith("◊")) {
@@ -517,7 +502,7 @@ export class Renderer {
       this.#alert(`Duplicate section reference '${name}'`);
     }
 
-    this.#collectRefs(children, [1, ...levelStack]);
+    this.#collectRefsWithLevel(children, [1, ...levelStack]);
     if (ref && this.#isNumbered(ref.name)) ++levelStack[0];
   }
 

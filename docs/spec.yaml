@@ -1,12 +1,7 @@
 ---
 ◊meta:
-  title: Weald 🌳
+  title: Weald 🌳 Language Specification
   version: 0.1.0
-  non-numbered-headings:
-    - Contents
----
-Contents:
-  - ◊toc:
 ---
 Introduction:
   - >
@@ -220,6 +215,8 @@ Lexical elements:
         represent (underflow), return a subnormal or signed zero as per IEEE 754 rules.
 
   - Strings:
+      - ◊syn:
+          String: ◊p TODO
       - TODO
 
   - Punctuation:
