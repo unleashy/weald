@@ -107,10 +107,6 @@
   line-height: var(--line-height);
 }
 
-:target {
-  scroll-margin-top: var(--separation, 1lh);
-}
-
 ::selection {
   background: var(--colour-accent-a6);
 }
