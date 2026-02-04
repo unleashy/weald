@@ -1,4 +1,4 @@
-﻿# 🌳 Weald
+# 🌳 Weald
 
 A new programming language (pronounced /wiːld/)
 

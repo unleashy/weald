@@ -1,4 +1,4 @@
-﻿{
+{
   "compilerOptions": {
     "lib": ["ESNext"],
     "target": "ESNext",
