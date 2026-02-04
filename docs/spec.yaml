@@ -188,21 +188,17 @@ Lexical elements:
         overflow or underflow silently, with the result wrapping around.
 
       - >
-        ◊b[Determining the value of an integer.] Defined piecewise over the integer productions. If
-        an overflow or underflow occurs, it is an error.
-      - ◊dl:
-          ◊syn[Integer]: >
-            the value of its ◊syn[PositiveInteger] component, then possibly negated if its
-            ◊syn[Sign] is ◊code[-]
-          ◊syn[IntegerDec]:
-            fold each ◊syn[DigitDec] component as value = value × 10 + digit, starting from 0
-          ◊syn[IntegerHex]:
-            fold each ◊syn[DigitHex] component as value = value × 16 + digit, starting from 0
-          ◊syn[IntegerBin]:
-            fold each ◊syn[DigitBin] component as value = value × 2 + digit, starting from 0
-          ◊syn[DigitDec]: map each character to its literal decimal value
-          ◊syn[DigitHex]: map each character to its literal hexadecimal value
-          ◊syn[DigitBin]: map each character to its literal binary value
+        ◊b[Determining the value of an integer.] For a decimal integer, its value is the literal
+        value of its digits, ignoring underscore separators, in base 10.
+
+        For a hexadecimal integer, its value is the literal value of its digits, ignoring underscore
+        separators and the prefix ◊code[0x], in base 16.
+
+        For a binary integer, its value is the literal value of its digits, ignoring underscore
+        separators and the prefix ◊code[0b], in base 2.
+
+        In any of the above cases, the number is negated if the sign component is ◊code[-]. If the
+        final value does not fit within the integer range, it is an error.
 
   - Floats:
       - ◊syn:
@@ -213,30 +209,21 @@ Lexical elements:
             - PositiveInteger FloatExponent
           FloatExponent: "`e` Integer"
       - >
-        Floats represent fractional numbers.
+        Floats represent rational numbers.
 
         The ◊syn[Char] immediately after ◊syn[Float] must not be ◊syn[NameStart] or ◊syn[DigitDec].
       - ◊note: >
           For example, ◊code[3.14e] is an error and not the float ◊code[3.14] and the name ◊code[e].
 
       - >
-        ◊b[Range of a float.] A float64 is an IEEE-754 64-bit quantity, with 53 bits of significand
+        ◊b[Range of a float.] A float is an IEEE-754 binary64 value, with 53 bits of significand
         precision (approximately 15–17 decimal digits). It can represent finite values up to
         ±1.8×10◊sup[308], plus ◊abbr[±∞][positive/negative infinity] and ◊abbr[NaN][not a number].
         Integers in the range ±2◊sup[53] are represented exactly.
 
       - >
-        ◊b[Determining the value of a float.] Defined piecewise over the float productions. If a
-        literal cannot be represented exactly, it is rounded to the nearest representable value,
-        using round-half-to-even.
-      - ◊dl:
-          ◊syn[Float]: >
-            the value of its ◊syn[PositiveFloat] component, then possibly negated if its ◊syn[Sign]
-            is ◊code[-]
-          ◊syn[PositiveFloat]: >
-            the formula (w + f × 10◊sup[−n]) × 10◊sup[e], where: w is the ◊syn[PositiveInteger]
-            component before the dot; f is the ◊syn[PositiveInteger] component after the dot
-            (defaulting to 0 if not present); n is the length of the component after the dot; and e
-            is the value of ◊syn[FloatExponent] (defaulting to 0 if not present)
-          ◊syn[FloatExponent]: >
-            the value of its ◊syn[Integer] component
+        ◊b[Determining the value of a float.] Compute the mathematical value represented by the
+        literal, ignoring underscore separators. Round the value to fit within a binary64 value
+        using the ◊code[roundTiesToEven] rounding mode. If the absolute value is too large to
+        represent (overflow), return a signed infinity. If the absolute value is too small to
+        represent (underflow), return a subnormal or signed zero as per IEEE 754 rules.
