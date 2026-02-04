@@ -14,7 +14,7 @@ Introduction:
 
     This document describes the language—mostly informally.
 ---
-Lexical syntax:
+Lexical elements:
   - >
     This chapter covers the lexical structure of the language. The ◊[source text] of a Weald program
     is transformed into a linear sequence of disjoint input elements: ◊i[tokens], ◊i[white space],
@@ -51,8 +51,7 @@ Lexical syntax:
             - U+0009
             - U+200E
             - U+200F
-      - >
-        White space is used to separate input elements. It is otherwise insignificant and should be
+      - White space is used to separate input elements. It is otherwise insignificant and should be
         ignored. The only white space characters allowed are space and tab, plus the left-to-right
         and right-to-left marks.
 
@@ -62,8 +61,7 @@ Lexical syntax:
           Newline:
             - U+000A
             - U+000D U+000A
-      - >
-        Newlines are used to separate statements from one another. The only newline characters
+      - Newlines are used to separate statements from one another. The only newline characters
         allowed are line feed and carriage return immediately followed by a line feed, i.e. either
         Unix-style LF or Windows-style CRLF.
 
@@ -78,8 +76,7 @@ Lexical syntax:
           CommentEnd:
             - Newline
             - End
-      - >
-        Comments are treated like white space and are ignored. The newline at the end of line
+      - Comments are treated like white space and are ignored. The newline at the end of line
         comments is emitted as a normal newline token; newlines within block comments are also
         emitted.
 
@@ -89,10 +86,10 @@ Lexical syntax:
           Token:
             - NameOrKeyword
             - Punctuation
-            - Number
+            - Integer
+            - Float
             - String
-      - >
-        Tokens are the main input elements consumed by the parser. They include names, keywords,
+      - Tokens are the main input elements consumed by the parser. They include names, keywords,
         punctuation, numbers, and strings.
 
   - Names and keywords:
@@ -105,7 +102,9 @@ Lexical syntax:
         Names (also called identifiers) are used to refer to variables, types, and other entities in
         a program. Keywords are instances of names reserved for denoting syntactical constructs. The
         value of a user-defined name must not be equal to any keyword.
-      - Both names and keywords are case-sensitive.
+
+        Both names and keywords are case-sensitive.
+
       - Names:
           - ◊syn:
               ◊caption: names
@@ -130,9 +129,11 @@ Lexical syntax:
               Continue: >
                 XID_Continue, plus ID_Compat_Math_Continue, minus Default_Ignorable_Code_Point;
               Medial: ◊U[002D].
-          - The Start set is a subset of the Continue set. Names may also be suffixed with at most
+          - >
+            The Start set is a subset of the Continue set. Names may also be suffixed with at most
             one of question mark ◊code[?] or exclamation point ◊code[!].
-          - The value of a name is the result of normalising its code points using Normalisation
+
+            The value of a name is the result of normalising its code points using Normalisation
             Form C. Therefore, two names are equal if their NFC forms are equal.
 
       - Keywords:
@@ -141,15 +142,39 @@ Lexical syntax:
               Keyword:
                 - "`todo`"
           - >
-            All code points in any keyword are in the ASCII range, and no new keyword will be
+            Keywords appear literally throughout this specification; every used keyword is listed
+            above.
+
+            All code points for all keywords are in the ASCII range, and no new keyword will be
             defined with code points outside that range.
 
   - Punctuation:
       - ◊syn:
           ◊caption: punctuation
           Punctuation: ◊one-of ( ) [ ] { }
-      - >
-        Punctuators are used to mark or separate syntactic constructs in a program. While only some
+      - Punctuators are used to mark or separate syntactic constructs in a program. While only some
         punctuators are currently used, every ASCII code point that is also Pattern_Syntax is
         reserved for future use; this is a profile of
         ◊[UAX-R3b-1][https://www.unicode.org/reports/tr31/#R3b].
+
+  - Integers:
+      - ◊syn:
+          ◊caption: integers
+          Integer:
+            - IntegerDec
+            - IntegerHex
+            - IntegerBin
+          IntegerDec: DigitDec+ (`_` DigitDec+)*
+          IntegerHex: "`0x` DigitHex+ (`_` DigitHex+)*"
+          IntegerBin: "`0b` DigitBin+ (`_` DigitBin+)*"
+          DigitDec: ◊one-of 0 1 2 3 4 5 6 7 8 9
+          DigitHex: ◊one-of 0 1 2 3 4 5 6 7 8 9 A B C D E F a b c d e f
+          DigitBin: ◊one-of 0 1
+      - >
+        Integers represent whole numbers. They can be written in decimal, hexadecimal, or binary
+        notation.
+
+        The ◊syn[Char] immediately after an integer literal must not be ◊syn[NameStart] or
+        ◊syn[DigitDec].
+      - ◊note:
+          For example, ◊code[3l] is an error and not the two input elements ◊code[3] and ◊code[l].
