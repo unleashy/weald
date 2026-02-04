@@ -13,7 +13,8 @@
     "unicode-name": "^1.1.0"
   },
   "scripts": {
-    "render": "bun run ./docs/render.ts",
-    "render:watch": "bun --hot run ./docs/render.ts"
+    "render": "bun run docs/render.ts",
+    "render:watch": "bun --hot run docs/serve.ts",
+    "render:prod": "bun run docs/render.ts && bun build --target=bun --production --outdir docs/dist docs/spec.html"
   }
 }
