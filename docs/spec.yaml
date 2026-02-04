@@ -49,9 +49,12 @@ Lexical syntax:
           Whitespace:
             - U+0020
             - U+0009
+            - U+200E
+            - U+200F
       - >
         White space is used to separate input elements. It is otherwise insignificant and should be
-        ignored. The only white space characters allowed are space and tab.
+        ignored. The only white space characters allowed are space and tab, plus the left-to-right
+        and right-to-left marks.
 
   - Newlines:
       - ◊syn:
@@ -59,7 +62,6 @@ Lexical syntax:
           Newline:
             - U+000A
             - U+000D U+000A
-          Newlines: Newline+
       - >
         Newlines are used to separate statements from one another. The only newline characters
         allowed are line feed and carriage return immediately followed by a line feed, i.e. either
