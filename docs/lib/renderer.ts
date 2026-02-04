@@ -173,7 +173,7 @@ export class Renderer {
       return;
     }
 
-    this.#output.push(`<aside class="note"><strong>Note:</strong>`);
+    this.#output.push(`<aside class="note"><strong class="colour:accent-12">Note:</strong>`);
     this.#output.push(`<div>`);
     this.#renderParagraph(value);
     this.#output.push(`</div>`);

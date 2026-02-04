@@ -84,6 +84,7 @@
   --colour-accent-9: #46a758;
   --colour-accent-10: #3e9b4f;
   --colour-accent-11: #2a7e3b;
+  --colour-accent-12: #203c25;
   --colour-accent-a3: #00970016;
   --colour-accent-a6: #008f0a4d;
 
@@ -433,6 +434,7 @@ a:is(:active, :focus) .heading-level {
   --colour-accent-a3: #008ff519;
   --colour-accent-5: #c2e5ff;
   --colour-accent-11: #0d74ce;
+  --colour-accent-12: #113264;
 
   display: grid;
   grid-template-columns: auto 1fr;
@@ -443,4 +445,8 @@ a:is(:active, :focus) .heading-level {
   background: var(--colour-accent-a3);
   border: 1px solid var(--colour-accent-5);
   border-radius: 0.5ch;
+}
+
+.colour\:accent-12 {
+  color: var(--colour-accent-12);
 }
