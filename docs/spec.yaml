@@ -111,22 +111,28 @@ Lexical syntax:
               ◊caption: names
               Name: NameStart NameContinue* (NameMedial NameContinue+)* NameFinal
               NameStart:
-                - ◊p XID_Start
+                - ◊p ◊i[XID_Start] but not ◊i[Default_Ignorable_Code_Point]
+                - ◊p ◊i[ID_Compat_Math_Start]
                 - "`_`"
-              NameContinue: ◊p XID_Continue
+              NameContinue:
+                - ◊p ◊i[XID_Continue] but not ◊i[Default_Ignorable_Code_Point]
+                - ◊p ◊i[ID_Compat_Math_Continue]
               NameMedial: "`-`"
               NameFinal: ◊one-of ? !
           - >
             Names follow ◊[UAX31-R1-1][https://www.unicode.org/reports/tr31/#R1] with the following
-            profile, incorporating the Mathematical Compatibility Notation profile:
+            profile, incorporating the Mathematical Compatibility Notation profile and the Default
+            Ignorable Exclusion profile:
           - ◊dl:
-              Start: XID_Start, plus ID_Compat_Math_Start, plus ◊code[_] underscore
-              Continue: XID_Continue, plus ID_Compat_Math_Continue (this includes underscore)
-              Medial: ◊code[-] hyphen-minus
-          - Names may also be suffixed with at most one of question mark ◊code[?] or exclamation
-            point ◊code[!].
-          - >
-            The value of a name is the result of normalising its code points using Normalisation
+              Start: >
+                XID_Start, plus ID_Compat_Math_Start, plus ◊U[005F], minus
+                Default_Ignorable_Code_Point;
+              Continue: >
+                XID_Continue, plus ID_Compat_Math_Continue, minus Default_Ignorable_Code_Point;
+              Medial: ◊U[002D].
+          - The Start set is a subset of the Continue set. Names may also be suffixed with at most
+            one of question mark ◊code[?] or exclamation point ◊code[!].
+          - The value of a name is the result of normalising its code points using Normalisation
             Form C. Therefore, two names are equal if their NFC forms are equal.
 
       - Keywords:

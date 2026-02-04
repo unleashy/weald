@@ -229,6 +229,7 @@ dl {
   display: grid;
   grid-template-columns: auto 1fr;
   column-gap: 1ch;
+  row-gap: 0.125rem;
 
   & > div {
     display: contents;
