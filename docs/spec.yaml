@@ -86,10 +86,10 @@ Lexical elements:
           ◊caption: tokens
           Token:
             - NameOrKeyword
-            - Punctuation
             - Integer
             - Float
             - String
+            - Punctuation
       - Tokens are the main input elements consumed by the parser. They include names, keywords,
         punctuation, numbers, and strings.
 
@@ -148,15 +148,6 @@ Lexical elements:
 
             All code points for all keywords are in the ASCII range, and no new keyword will be
             defined with code points outside that range.
-
-  - Punctuation:
-      - ◊syn:
-          ◊caption: punctuation
-          Punctuation: ◊one-of ( ) [ ] { }
-      - Punctuators are used to mark or separate syntactic constructs in a program. While only some
-        punctuators are currently used, every ASCII code point that is also Pattern_Syntax is
-        reserved for future use; this is a profile of
-        ◊[UAX-R3b-1][https://www.unicode.org/reports/tr31/#R3b].
 
   - Integers:
       - ◊syn:
@@ -227,3 +218,15 @@ Lexical elements:
         using the ◊code[roundTiesToEven] rounding mode. If the absolute value is too large to
         represent (overflow), return a signed infinity. If the absolute value is too small to
         represent (underflow), return a subnormal or signed zero as per IEEE 754 rules.
+
+  - Strings:
+      - TODO
+
+  - Punctuation:
+      - ◊syn:
+          ◊caption: punctuation
+          Punctuation: ◊one-of ( ) [ ] { }
+      - Punctuators are used to mark or separate syntactic constructs in a program. While only some
+        punctuators are currently used, every ASCII code point that is also Pattern_Syntax is
+        reserved for future use; this is a profile of
+        ◊[UAX-R3b-1][https://www.unicode.org/reports/tr31/#R3b].
