@@ -16,18 +16,24 @@ interface SectionRef extends Ref {
 interface SyntaxRef extends Ref {}
 
 // language=html
-const BOILERPLATE = `
+const SHELL = `
 <!DOCTYPE html>
+<html lang="en-GB">
 <head>
   <meta charset="utf-8">
-  <title>◊title</title>
   <link rel="stylesheet" href="style.css">
+  <title>◊title</title>
 </head>
-
+<body>
 <header>
   <p class="title">◊title</p>
   <p class="metadata">Version ◊version / ◊date</p>
 </header>
+<main>
+◊main
+</main>
+</body>
+</html>
 `;
 
 export class Renderer {
@@ -41,7 +47,7 @@ export class Renderer {
     let renderDate = new Date().toISOString().split("T")[0];
     let meta = spec[0]["◊meta"] as Record<string, unknown>;
 
-    this.#output = [BOILERPLATE];
+    this.#output = [];
     this.#sectionRefs = [];
     this.#syntaxRefs.clear();
     this.#nonNumberedHeadings = Array.isArray(meta["non-numbered-headings"])
@@ -51,21 +57,22 @@ export class Renderer {
     this.#collectRefs(spec.slice(1), [1]);
     this.#renderChildren(spec.slice(1), 1);
 
-    return this.#output
-      .join("\n")
-      .replaceAll(/◊(\w+)/gu, (matched, prop) => {
-        switch (prop) {
-          case "title":
-            return String(meta.title ?? "");
-          case "version":
-            return String(meta.version ?? "");
-          case "date":
-            return renderDate;
-          default:
-            return matched;
-        }
-      })
-      .trim();
+    let main = this.#output.join("\n");
+
+    return SHELL.replaceAll(/◊(\w+)/gu, (matched, prop) => {
+      switch (prop) {
+        case "title":
+          return String(meta.title ?? "");
+        case "version":
+          return String(meta.version ?? "");
+        case "date":
+          return renderDate;
+        case "main":
+          return main;
+        default:
+          return matched;
+      }
+    }).trim();
   }
 
   #renderChildren(children: unknown[], level: number) {
@@ -128,6 +135,9 @@ export class Renderer {
       case "dl":
         return this.#renderDefinitionList(value);
 
+      case "note":
+        return this.#renderNote(value);
+
       case "p":
         return this.#renderParagraph(value);
 
@@ -154,6 +164,17 @@ export class Renderer {
       this.#output.push(`<div><dt>${term}</dt><dd>${inline}</dd></div>`);
     }
     this.#output.push("</dl>");
+  }
+
+  #renderNote(value: unknown) {
+    if (typeof value !== "string") {
+      this.#renderError("◊note tag with non-string contents");
+      return;
+    }
+
+    this.#output.push(`<aside class="note">`);
+    this.#renderParagraph(value);
+    this.#output.push(`</aside>`);
   }
 
   #renderParagraph(value: unknown) {

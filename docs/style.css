@@ -283,7 +283,7 @@ a:is(:active, :focus) .heading-level {
     padding-inline: var(--prose-padding);
   }
 
-  & > :is(p, dl) {
+  & > :is(p, aside, dl) {
     margin-inline-start: var(--indent);
   }
 
