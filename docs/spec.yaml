@@ -176,5 +176,5 @@ Lexical elements:
 
         The ◊syn[Char] immediately after an integer literal must not be ◊syn[NameStart] or
         ◊syn[DigitDec].
-      - ◊note:
-          For example, ◊code[3l] is an error and not the two input elements ◊code[3] and ◊code[l].
+      - ◊note: >
+          For example, ◊code[3xl] is an error and not the integer ◊code[3] and the name ◊code[xl].

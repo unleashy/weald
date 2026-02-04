@@ -172,8 +172,10 @@ export class Renderer {
       return;
     }
 
-    this.#output.push(`<aside class="note">`);
+    this.#output.push(`<aside class="note"><strong>Note:</strong>`);
+    this.#output.push(`<div>`);
     this.#renderParagraph(value);
+    this.#output.push(`</div>`);
     this.#output.push(`</aside>`);
   }
 

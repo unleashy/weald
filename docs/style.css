@@ -111,6 +111,10 @@
   scroll-margin-top: var(--separation, 1lh);
 }
 
+::selection {
+  background: var(--colour-accent-a6);
+}
+
 body {
   max-width: 75ch;
   margin-inline: auto;
@@ -283,7 +287,7 @@ a:is(:active, :focus) .heading-level {
     padding-inline: var(--prose-padding);
   }
 
-  & > :is(p, aside, dl) {
+  & > :is(p, dl) {
     margin-inline-start: var(--indent);
   }
 
@@ -429,6 +433,18 @@ a:is(:active, :focus) .heading-level {
   font-weight: var(--weight-semibold);
 }
 
-::selection {
-  background: var(--colour-accent-a6);
+.note {
+  --colour-accent-a3: #008ff519;
+  --colour-accent-5: #c2e5ff;
+  --colour-accent-11: #0d74ce;
+
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1ch;
+
+  padding: calc(var(--indent) + var(--prose-padding));
+
+  background: var(--colour-accent-a3);
+  border: 1px solid var(--colour-accent-5);
+  border-radius: 0.5ch;
 }
