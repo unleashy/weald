@@ -28,6 +28,7 @@ Lexical elements:
           Char: ◊p any Unicode code point but not ◊[ForbiddenChar]
           ForbiddenChar:
             - ◊p any Control code point but not ◊[Whitespace] or ◊[Newline]
+            - ◊p any Surrogate code point
             - U+2028
             - U+2029
           End: ◊p the physical end of input
