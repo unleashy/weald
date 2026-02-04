@@ -160,7 +160,9 @@ Lexical elements:
   - Integers:
       - ◊syn:
           ◊caption: integers
-          Integer:
+          Integer: Sign? PositiveInteger
+          Sign: ◊one-of + -
+          PositiveInteger:
             - IntegerDec
             - IntegerHex
             - IntegerBin
@@ -174,7 +176,66 @@ Lexical elements:
         Integers represent whole numbers. They can be written in decimal, hexadecimal, or binary
         notation.
 
-        The ◊syn[Char] immediately after an integer literal must not be ◊syn[NameStart] or
+        The ◊syn[Char] immediately after ◊syn[Integer] must not be ◊syn[NameStart] or
         ◊syn[DigitDec].
       - ◊note: >
-          For example, ◊code[3xl] is an error and not the integer ◊code[3] and the name ◊code[xl].
+          For example, ◊code[2xl] is an error and not the integer ◊code[2] and the name ◊code[xl].
+
+      - >
+        ◊b[Range of an integer.] An integer is a 64-bit, two’s-complement quantity, which ranges
+        from −2◊sup[63] to 2◊sup[63 − 1]. During runtime, operations on the integer value may
+        overflow or underflow silently, with the result wrapping around.
+
+      - >
+        ◊b[Determining the value of an integer.] Defined piecewise over the integer productions. If
+        an overflow or underflow occurs, it is an error.
+      - ◊dl:
+          ◊syn[Integer]: >
+            the value of its ◊syn[PositiveInteger] component, then possibly negated if its
+            ◊syn[Sign] is ◊code[-]
+          ◊syn[IntegerDec]:
+            fold each ◊syn[DigitDec] component as value = value × 10 + digit, starting from 0
+          ◊syn[IntegerHex]:
+            fold each ◊syn[DigitHex] component as value = value × 16 + digit, starting from 0
+          ◊syn[IntegerBin]:
+            fold each ◊syn[DigitBin] component as value = value × 2 + digit, starting from 0
+          ◊syn[DigitDec]: map each character to its literal decimal value
+          ◊syn[DigitHex]: map each character to its literal hexadecimal value
+          ◊syn[DigitBin]: map each character to its literal binary value
+
+  - Floats:
+      - ◊syn:
+          ◊caption: floats
+          Float: Sign? PositiveFloat
+          PositiveFloat:
+            - PositiveInteger `.` PositiveInteger FloatExponent?
+            - PositiveInteger FloatExponent
+          FloatExponent: "`e` Integer"
+      - >
+        Floats represent fractional numbers.
+
+        The ◊syn[Char] immediately after ◊syn[Float] must not be ◊syn[NameStart] or ◊syn[DigitDec].
+      - ◊note: >
+          For example, ◊code[3.14e] is an error and not the float ◊code[3.14] and the name ◊code[e].
+
+      - >
+        ◊b[Range of a float.] A float64 is an IEEE-754 64-bit quantity, with 53 bits of significand
+        precision (approximately 15–17 decimal digits). It can represent finite values up to
+        ±1.8×10◊sup[308], plus ◊abbr[±∞][positive/negative infinity] and ◊abbr[NaN][not a number].
+        Integers in the range ±2◊sup[53] are represented exactly.
+
+      - >
+        ◊b[Determining the value of a float.] Defined piecewise over the float productions. If a
+        literal cannot be represented exactly, it is rounded to the nearest representable value,
+        using round-half-to-even.
+      - ◊dl:
+          ◊syn[Float]: >
+            the value of its ◊syn[PositiveFloat] component, then possibly negated if its ◊syn[Sign]
+            is ◊code[-]
+          ◊syn[PositiveFloat]: >
+            the formula (w + f × 10◊sup[−n]) × 10◊sup[e], where: w is the ◊syn[PositiveInteger]
+            component before the dot; f is the ◊syn[PositiveInteger] component after the dot
+            (defaulting to 0 if not present); n is the length of the component after the dot; and e
+            is the value of ◊syn[FloatExponent] (defaulting to 0 if not present)
+          ◊syn[FloatExponent]: >
+            the value of its ◊syn[Integer] component

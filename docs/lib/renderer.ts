@@ -160,8 +160,9 @@ export class Renderer {
 
     this.#output.push("<dl>");
     for (let [term, def] of Object.entries(value)) {
-      let inline = this.#renderInlineTags(String(def));
-      this.#output.push(`<div><dt>${term}</dt><dd>${inline}</dd></div>`);
+      let renderedTerm = this.#renderInlineTags(term);
+      let renderedDef = this.#renderInlineTags(String(def));
+      this.#output.push(`<div><dt>${renderedTerm}</dt><dd>${renderedDef}</dd></div>`);
     }
     this.#output.push("</dl>");
   }
@@ -403,8 +404,8 @@ export class Renderer {
       case "abbr":
         return this.#renderAbbreviation(content, extra);
 
-      case "code":
-        return this.#renderCode(content);
+      case "b":
+        return this.#renderBold(content);
 
       case "i":
         return this.#renderItalics(content);
@@ -417,7 +418,7 @@ export class Renderer {
         return this.#renderUnicode(content);
 
       default:
-        return errorTag(`Unknown inline tag ◊${tag}`);
+        return this.#renderGeneric(tag, content);
     }
   }
 
@@ -462,10 +463,10 @@ export class Renderer {
     return `<abbr title="${body}">${abbr}</abbr>`;
   }
 
-  #renderCode(s: string | undefined): string {
-    if (s == undefined) return errorTag("◊code tag missing body");
+  #renderBold(s: string | undefined): string {
+    if (s === undefined) return errorTag("◊b tag missing body");
 
-    return `<code>${s}</code>`;
+    return `<strong>${s}</strong>`;
   }
 
   #renderItalics(s: string | undefined): string {
@@ -477,6 +478,12 @@ export class Renderer {
     if (s === undefined) return errorTag("◊u tag missing body");
 
     return `<abbr title="${nameCodePoint(s)}" class="unicode">U+${s}</abbr>`;
+  }
+
+  #renderGeneric(tag: string, s: string | undefined): string {
+    if (s === undefined) return errorTag(`◊${tag} tag missing body`);
+
+    return `<${tag}>${s}</${tag}>`;
   }
 
   #collectRefs(children: Children, levelStack: number[]) {
