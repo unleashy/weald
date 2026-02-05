@@ -170,28 +170,40 @@ Lexical elements:
         Integers represent whole numbers. They can be written in decimal, hexadecimal, or binary
         notation.
 
-        The ◊syn[Char] immediately after ◊syn[Integer] must not be ◊syn[NameStart] or
-        ◊syn[DigitDec].
+        The ◊syn[Char] immediately after ◊syn[Integer] must not be ◊syn[NameContinue] or
+        ◊syn[NameMedial].
       - ◊note: >
           For example, ◊code[2xl] is an error and not the integer ◊code[2] and the name ◊code[xl].
 
       - >
-        ◊b[Range of an integer.] An integer is a 64-bit, two’s-complement quantity, which ranges
-        from −2◊sup[63] to 2◊sup[63 − 1]. During runtime, operations on the integer value may
-        overflow or underflow silently, with the result wrapping around.
+        ◊b[Range of an integer.] An integer literal is a 128-bit, two’s-complement quantity, which
+        ranges from −2◊sup[127] to 2◊sup[127 − 1]. It is an error if the literal is outside this
+        range. The actual value of an integer literal depends on its type, which is inferred from
+        context.
 
       - >
-        ◊b[Determining the value of an integer.] For a decimal integer, its value is the literal
-        value of its digits, ignoring underscore separators, in base 10.
+        ◊b[Types of integers.] The type of an integer can be either Nat, Int, or Byte.
+      - ◊dl:
+          Nat: unsigned 64-bit value ranging from 0 to 2◊sup[64 − 1]
+          Int: signed 64-bit value ranging from −2◊sup[63] to 2◊sup[63 − 1]
+          Byte: unsigned 8-bit value ranging from 0 to 255
+      - >
+        This type is inferred from context:
+      - ◊ul:
+          - If the literal has a negative sign, the type is forced to Int.
+          - If the type can ◊i[uniquely] be determined from context, it is that type.
+          - If the context under-constrains the type, it defaults to Nat.
+          - If the context over-constrains the type, it is an error.
 
-        For a hexadecimal integer, its value is the literal value of its digits, ignoring underscore
-        separators and the prefix ◊code[0x], in base 16.
+      - >
+        ◊b[Determining the value of an integer.] The value of an integer is the value of its sign
+        and digits, ignoring underscore separators. This value is interpreted in a specific radix
+        depending on the prefix: ◊code[0x] indicates base 16, ◊code[0b] indicates base 2, and no
+        prefix indicates base 10. The prefix itself is not part of the value.
 
-        For a binary integer, its value is the literal value of its digits, ignoring underscore
-        separators and the prefix ◊code[0b], in base 2.
-
-        In any of the above cases, the number is negated if the sign component is ◊code[-]. If the
-        final value does not fit within the integer range, it is an error.
+        In any of the above cases, the number is negated if it has a negative sign. Then, the final
+        value is checked to fit within its inferred type’s range; if it does not fit within the
+        integer range of its type, it is an error.
 
   - Floats:
       - ◊syn:

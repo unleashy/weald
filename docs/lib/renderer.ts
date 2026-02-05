@@ -158,6 +158,9 @@ export class Renderer {
       case "syn":
         return this.#renderSyntax(value);
 
+      case "ul":
+        return this.#renderUnorderedList(value);
+
       default:
         return this.#renderError(`Unknown tag ◊${name}`);
     }
@@ -241,18 +244,26 @@ export class Renderer {
   }
 
   #renderOrderedList(value: unknown) {
+    this.#renderList("ol", value);
+  }
+
+  #renderUnorderedList(value: unknown) {
+    this.#renderList("ul", value);
+  }
+
+  #renderList(tag: "ul" | "ol", value: unknown) {
     if (!Array.isArray(value)) {
-      this.#renderError("◊ol tag with non-string contents");
+      this.#renderError(`◊${tag} tag with non-string contents`);
       return;
     }
 
-    this.#output.push(`<ol>`);
+    this.#output.push(`<${tag}>`);
     for (let item of value) {
       this.#output.push(`<li>`);
       this.#renderParagraph(item);
       this.#output.push(`</li>`);
     }
-    this.#output.push(`</ol>`);
+    this.#output.push(`</${tag}>`);
   }
 
   #renderParagraph(value: unknown) {
