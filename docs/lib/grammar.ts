@@ -106,11 +106,11 @@ function terminal(s: string) {
   }
 }
 
-// Nonterminal: Ws [A-Za-z_] [A-Za-z0-9_]*
+// Nonterminal: Ws [A-Za-z_] [A-Za-z0-9_]* '’'*
 function nonterminal(s: string) {
   if (isButNot(s)) return undefined;
 
-  let m = s.match(/^[A-Za-z_][A-Za-z0-9_]*/);
+  let m = s.match(/^[A-Za-z_][A-Za-z0-9_]*’*/);
   if (!m) return undefined;
 
   return [{ type: "nonterminal", value: m[0] }, s.slice(m[0].length)] as const;

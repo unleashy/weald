@@ -96,11 +96,9 @@ Lexical elements:
             - Name but not Keyword
             - Keyword
       - >
-        Names (also called identifiers) are used to refer to variables, types, and other entities in
-        a program. Keywords are instances of names reserved for denoting syntactical constructs. The
-        value of a user-defined name must not be equal to any keyword.
-
-        Both names and keywords are case-sensitive.
+        Names (also called identifiers) are case-sensitive labels used to refer to variables, types,
+        and other entities in a program. Keywords are instances of names reserved for denoting
+        syntactical constructs. The value of a user-defined name must not be equal to any keyword.
 
       - Names:
           - ◊syn:
@@ -141,8 +139,8 @@ Lexical elements:
             Keywords appear literally throughout this specification; every used keyword is listed
             above.
 
-            All code points for all keywords are in the ASCII range, and no new keyword will be
-            defined with code points outside that range.
+            All keywords use only lowercase ASCII letters, and no new keyword will be defined with
+            code points outside that range.
 
   - Booleans:
       - ◊syn:

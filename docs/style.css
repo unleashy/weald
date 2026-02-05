@@ -231,6 +231,7 @@ output {
   font-family: var(--font-mono), monospace;
   font-size: var(--f--1);
   line-height: 1.25;
+  font-variant-ligatures: none;
 
   &:not(.syntax-terminal) {
     background: var(--colour-accent-a3);
