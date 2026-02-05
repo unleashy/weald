@@ -5,12 +5,22 @@ namespace Weald.Core;
 
 internal static class StringExtensions
 {
-    [Pure]
-    public static string Escape(this string? self) =>
-        (self ?? "")
-            .EnumerateRunes()
-            .Select(rune => rune == new Rune('"') ? "\\\"" : rune.Escape())
-            .JoinToString(separator: "", prefix: "\"", suffix: "\"");
+    extension(string self)
+    {
+        [Pure]
+        public string Escape() =>
+            self
+                .EnumerateRunes()
+                .Select(rune => rune == new Rune('"') ? "\\\"" : rune.Escape())
+                .JoinToString(separator: "", prefix: "\"", suffix: "\"");
+
+        [Pure]
+        public int LengthInGraphemeClusters()
+        {
+            var si = new StringInfo(self);
+            return si.LengthInTextElements;
+        }
+    }
 }
 
 internal static class RuneExtensions
@@ -71,4 +81,14 @@ internal static class EnumerableExtensions
 
         return sb.ToString();
     }
+}
+
+internal static class DictionaryExtensions
+{
+    public static TValue GetValueElse<TKey, TValue>(
+        this IDictionary<TKey, TValue> self,
+        TKey key,
+        Func<TKey, TValue> func
+    ) =>
+        self.TryGetValue(key, out var value) ? value : self[key] = func(key);
 }

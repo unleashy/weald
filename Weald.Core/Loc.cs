@@ -29,4 +29,6 @@ public readonly record struct Loc
     }
 
     public override string ToString() => $"{Start}:{Length}";
+
+    [NonNegativeValue] public int End => Start + Length;
 }

@@ -1,4 +1,5 @@
 <Solution>
-    <Project Path="Weald.Core/Weald.Core.csproj"/>
-    <Project Path="Weald/Weald.csproj"/>
+    <Project Path="Weald.Core/Weald.Core.csproj" />
+    <Project Path="Weald.Tests/Weald.Tests.csproj" />
+    <Project Path="Weald/Weald.csproj" />
 </Solution>
