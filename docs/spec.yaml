@@ -136,7 +136,7 @@ Lexical elements:
       - Keywords:
           - ◊syn:
               ◊caption: keywords
-              Keyword: ◊one-of true false
+              Keyword: ◊one-of _ true false
           - >
             Keywords appear literally throughout this specification; every used keyword is listed
             above.
@@ -306,7 +306,8 @@ Lexical elements:
   - Punctuation:
       - ◊syn:
           ◊caption: punctuation
-          Punctuation: ◊one-of ( ) [ ] { }
+          Punctuation: >
+            ◊one-of . , : \ | + - * / % ^ ! && || < <= == != => > = ( ) [ ] { }
       - Punctuators are used to mark or separate syntactic constructs in a program. While only some
         punctuators are currently used, every ASCII code point that is also Pattern_Syntax is
         reserved for future use; this is a profile of
