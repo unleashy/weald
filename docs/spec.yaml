@@ -81,12 +81,13 @@ Lexical elements:
           ◊caption: tokens
           Token:
             - NameOrKeyword
+            - Boolean
             - Integer
             - Float
             - String
             - Punctuation
       - Tokens are the main input elements consumed by the parser. They include names, keywords,
-        punctuation, numbers, and strings.
+        booleans, integers, floats, and strings.
 
   - Names and keywords:
       - ◊syn:
@@ -135,14 +136,22 @@ Lexical elements:
       - Keywords:
           - ◊syn:
               ◊caption: keywords
-              Keyword:
-                - "`todo`"
+              Keyword: ◊one-of true false
           - >
             Keywords appear literally throughout this specification; every used keyword is listed
             above.
 
             All code points for all keywords are in the ASCII range, and no new keyword will be
             defined with code points outside that range.
+
+  - Booleans:
+      - ◊syn:
+          ◊caption: booleans
+          Boolean:
+            - "`true`"
+            - "`false`"
+      - >
+        Boolean literals represent a logical value that can be either true or false.
 
   - Integers:
       - ◊syn:
@@ -216,8 +225,83 @@ Lexical elements:
 
   - Strings:
       - ◊syn:
-          String: ◊p TODO
-      - TODO
+          ◊caption: strings
+          String:
+            - StringStandard
+            - StringWysiwyg
+          StringStandard:
+            - StringLine
+            - StringBlock
+          StringWysiwyg:
+            - "`@` StringStandard"
+          StringLine: '`"` StringLineChar* `"`'
+          StringLineChar: CharEscapable but not Newline
+          StringBlock: '`"""` Whitespace* Newline StringBlockChar* Newline Whitespace* `"""`'
+          StringBlockChar: CharEscapable
+          CharEscapable:
+            - Char but not `\`
+            - "`\\` Escape"
+          Escape:
+            - EscapeBasic
+            - EscapeUnicode
+            - EscapeContinuation
+          EscapeBasic: ◊one-of " \ e n r t
+          EscapeUnicode:
+            - "`x` DigitHex DigitHex"
+            - "`u` DigitHex DigitHex DigitHex DigitHex"
+            - "`u{` DigitHex+ `}`"
+          EscapeContinuation: Newline Whitespace*
+      - >
+        A string is a sequence of zero or more Unicode code points, resolving to a ◊i[content]
+        value. Strings have with multiple literal forms, described below.
+
+        ◊b[Line strings.] Enclosed in double quotes, ◊code["like this"]. They cannot contain
+        newlines or double quotes. The content of a line string is the sequence of code points
+        within the double quotes, so the content of the previous example is just ◊code[like this].
+
+        ◊b[Block strings.] Enclosed in triple quotes. They can span multiple lines and may contain
+        double quotes (but not three consecutively). The content of a block string is the sequence
+        of code points within the triple quotes, applying the following transformations in order:
+
+      - ◊ol:
+          - Trim leading and trailing whitespace
+          - Split the sequence into lines at each ◊syn[Newline]
+          - For each line, remove the common leading whitespace, ignoring blank lines
+          - Join the resulting lines with ◊U[000A]
+
+      - >
+        The ◊i[content] can then be further interpreted in two ways: standard and
+        ◊abbr[wysiwyg][what you see is what you get]. In the standard form, ◊i[escape sequences] are
+        replaced by their corresponding values. In the wysiwyg form, escape sequences are treated as
+        literal code points.
+
+        ◊b[Standard interpretation.] Escape sequences are replaced by their corresponding values as
+        per the following table:
+
+      - ◊csv:
+          ◊caption: escape sequences
+          ◊data: |
+            Escape sequence,       Replacement
+            ◊tt[\◊syn[Newline]],   continuation escape
+            "◊tt[\""]",            ◊U[0022]
+            ◊tt[\\],               ◊U[005C]
+            ◊tt[\e],               ◊U[001B]
+            ◊tt[\n],               ◊U[000A]
+            ◊tt[\r],               ◊U[000D]
+            ◊tt[\t],               ◊U[0009]
+            ◊tt[\u◊i[HHHH]],       the code point U+◊i[HHHH]
+            ◊tt[\u{◊i[H…]◊tt[}]],  the code point U+◊i[H…]
+            ◊tt[\x◊i[HH]],         the code point U+00◊i[HH]
+
+      - Any other escape sequences are an error. Also, the Unicode ◊code[\u \x] escape sequences
+        require a valid code point in hexadecimal.
+
+      - ◊b[Continuation escapes.] When this escape is encountered, the newline and any whitespace
+        after are replaced by an empty string. That is, the continuation escape allows line strings
+        to span multiple lines. Block strings may also use it.
+
+      - ◊b[Wysiwyg interpretation.] Escape sequences are kept verbatim. Wysiwyg strings are prefixed
+        with an at-sign ◊code[@].
 
   - Punctuation:
       - ◊syn:

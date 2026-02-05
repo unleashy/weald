@@ -71,12 +71,11 @@
   --f-2: clamp(1.1865rem, 1.1016rem + 0.3774vw, 1.4238rem);
   --f-3: clamp(1.3348rem, 1.2393rem + 0.4246vw, 1.6018rem);
   --f-4: clamp(1.5017rem, 1.3942rem + 0.4777vw, 1.802rem);
-  --leading: 0.333lh;
-  --indent: 0.5rem;
 
   --colour-grey-12: #1d211c;
   --colour-grey-1: #fcfdfc;
   --colour-grey-2: #f8faf8;
+  --colour-grey-6: #d7dad7;
   --colour-grey-11: #60655f;
   --colour-grey-a6: #00140028;
   --colour-accent-5: #c9e8ca;
@@ -100,7 +99,10 @@
 
   --line-height: 1.65;
 
+  --leading: 0.333lh;
+  --indent: 0.5rem;
   --prose-padding: 1rem;
+  --prose-indented-padding: calc(var(--prose-padding) + var(--indent));
 
   background: var(--colour-grey-2);
   color: var(--colour-grey-12);
@@ -230,12 +232,50 @@ output {
   font-size: var(--f--1);
   line-height: 1.25;
 
-  background: var(--colour-accent-a3);
-  color: var(--colour-accent-11);
+  &:not(.syntax-terminal) {
+    background: var(--colour-accent-a3);
+    color: var(--colour-accent-11);
 
-  padding-inline: 0.5ch;
-  padding-block-start: 0.33ch;
-  border-radius: 0.25ch;
+    padding-inline: 0.5ch;
+    padding-block-start: 0.33ch;
+    border-radius: 0.25ch;
+  }
+}
+
+table {
+  text-align: left;
+  align-self: center;
+
+  border-collapse: collapse;
+}
+
+caption {
+  caption-side: bottom;
+  padding-block-start: 0.5rem;
+}
+
+table,
+thead,
+tr {
+  border-block: 2px solid var(--colour-grey-6);
+}
+
+tr {
+  border-width: 1px;
+}
+
+th,
+td {
+  padding-block: 0.25rem;
+  padding-inline: 0.5rem;
+
+  &:first-child {
+    padding-inline-start: var(--prose-indented-padding);
+  }
+
+  &:last-child {
+    padding-inline-end: var(--prose-indented-padding);
+  }
 }
 
 .metadata {
@@ -294,7 +334,12 @@ a:is(:hover, :focus, :active, :focus) .heading-level {
   background: var(--colour-grey-2);
 }
 
-@media (min-width: 75ch) {
+.header,
+.toc {
+  padding-inline: var(--prose-padding);
+}
+
+@media (min-width: 80ch) {
   .body {
     grid-template-columns: max-content fit-content(75ch);
   }
@@ -302,6 +347,10 @@ a:is(:hover, :focus, :active, :focus) .heading-level {
   .toc {
     position: sticky;
     top: 0;
+  }
+
+  .content {
+    padding-inline: var(--prose-padding);
   }
 }
 
@@ -325,11 +374,6 @@ a:is(:hover, :focus, :active, :focus) .heading-level {
   }
 }
 
-.header,
-.toc {
-  padding-inline: var(--prose-padding);
-}
-
 .prose {
   display: flex;
   flex-direction: column;
@@ -337,10 +381,11 @@ a:is(:hover, :focus, :active, :focus) .heading-level {
 
   & > * {
     padding-inline: var(--prose-padding);
+    margin-inline-start: var(--indent);
   }
 
-  & > :is(p, dl) {
-    margin-inline-start: var(--indent);
+  & > :is(div, section, aside, img, figure, table) {
+    margin-inline-start: inherit;
   }
 
   & > .prose {
@@ -357,14 +402,19 @@ a:is(:hover, :focus, :active, :focus) .heading-level {
   margin-block-end: 1rem;
 
   & > * {
-    padding-inline: calc(var(--indent) + var(--prose-padding));
+    padding-inline: var(--prose-indented-padding);
   }
 }
 
-.syntax-caption {
+.syntax-caption,
+caption {
   font-size: var(--f--1);
   font-weight: var(--weight-semibold);
   font-style: italic;
+}
+
+.syntax-caption {
+  order: 1;
 }
 
 @supports (anchor-name: --anchor-rule-name) {
@@ -429,11 +479,10 @@ a:is(:hover, :focus, :active, :focus) .heading-level {
   flex-direction: column;
   gap: 1lh;
 
-  padding-block: calc(var(--indent) + var(--prose-padding));
+  padding-block: var(--prose-indented-padding);
 
   background: var(--colour-accent-a3);
   border: 1px solid var(--colour-accent-5);
-  border-radius: 0.5ch;
 
   & .syntax-nonterminal:not(:hover, :focus, :active) {
     color: inherit;
@@ -495,11 +544,17 @@ a:is(:hover, :focus, :active, :focus) .heading-level {
   grid-template-columns: auto 1fr;
   gap: 1ch;
 
-  padding: calc(var(--indent) + var(--prose-padding));
+  padding: var(--prose-indented-padding);
 
   background: var(--colour-accent-a3);
   border: 1px solid var(--colour-accent-5);
-  border-radius: 0.5ch;
+}
+
+@media (min-width: 80ch) {
+  .ruleset,
+  .note {
+    border-radius: 0.5ch;
+  }
 }
 
 .colour\:accent-12 {

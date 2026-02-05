@@ -1,5 +1,6 @@
 import Slugger, { slug } from "github-slugger";
 import { unicodeName } from "unicode-name";
+import * as csv from "csv-parse/sync";
 import { parseTerms, type RootTerm, type Term } from "./grammar.ts";
 
 type Children = Array<Record<string, unknown> | string>;
@@ -139,11 +140,17 @@ export class Renderer {
 
   #renderTag(name: string, value: unknown) {
     switch (name) {
+      case "csv":
+        return this.#renderCsvTable(value);
+
       case "dl":
         return this.#renderDefinitionList(value);
 
       case "note":
         return this.#renderNote(value);
+
+      case "ol":
+        return this.#renderOrderedList(value);
 
       case "p":
         return this.#renderParagraph(value);
@@ -154,6 +161,55 @@ export class Renderer {
       default:
         return this.#renderError(`Unknown tag ◊${name}`);
     }
+  }
+
+  #renderCsvTable(table: unknown) {
+    if (!isObject(table)) {
+      this.#renderError("◊csv tag with non-object contents");
+      return;
+    }
+
+    let data = table["◊data"];
+    if (typeof data !== "string") {
+      this.#renderError("◊csv tag with no data");
+      return;
+    }
+
+    let result = parseCsv(data);
+    if (result.error) {
+      this.#renderError(`◊csv: ${result.error.message}`);
+      return;
+    }
+
+    let { header, rows } = result;
+
+    let caption;
+    if (typeof table["◊caption"] === "string") {
+      caption = `Table: ${table["◊caption"]}`;
+    }
+
+    this.#output.push(`<table>`);
+    if (caption) this.#output.push(`<caption>${caption}</caption>`);
+
+    this.#output.push("<thead>");
+    this.#output.push("<tr>");
+    for (let column of header) {
+      this.#output.push(`<th scope="col">${this.#renderInlineTags(column)}</th>`);
+    }
+    this.#output.push("</tr>");
+    this.#output.push("</thead>");
+
+    this.#output.push("<tbody>");
+    for (let row of rows) {
+      this.#output.push("<tr>");
+      for (let cell of row) {
+        this.#output.push(`<td>${this.#renderInlineTags(cell)}</td>`);
+      }
+      this.#output.push("</tr>");
+    }
+    this.#output.push("</tbody>");
+
+    this.#output.push("</table>");
   }
 
   #renderDefinitionList(value: unknown) {
@@ -182,6 +238,21 @@ export class Renderer {
     this.#renderParagraph(value);
     this.#output.push(`</div>`);
     this.#output.push(`</aside>`);
+  }
+
+  #renderOrderedList(value: unknown) {
+    if (!Array.isArray(value)) {
+      this.#renderError("◊ol tag with non-string contents");
+      return;
+    }
+
+    this.#output.push(`<ol>`);
+    for (let item of value) {
+      this.#output.push(`<li>`);
+      this.#renderParagraph(item);
+      this.#output.push(`</li>`);
+    }
+    this.#output.push(`</ol>`);
   }
 
   #renderParagraph(value: unknown) {
@@ -214,8 +285,8 @@ export class Renderer {
     }
 
     this.#output.push(`<figure class="syntax">`);
-    this.#renderRuleset(ruleset);
     this.#output.push(`<figcaption class="syntax-caption">${caption}</figcaption>`);
+    this.#renderRuleset(ruleset);
     this.#output.push("</figure>");
   }
 
@@ -368,10 +439,65 @@ export class Renderer {
   }
 
   #renderInlineTags(s: string, defaultTag: string = "a"): string {
-    return s.replaceAll(/◊(\w*)(?:\[(.*?)\])?(?:\[(.*?)\])?/gu, (_, tag, content, extra) => {
-      if (tag === "" || tag === undefined) tag = defaultTag;
-      return this.#renderInlineTag(tag, content, extra);
-    });
+    let result = "";
+
+    while (s.length > 0) {
+      let rendered;
+      [rendered, s] = this.#renderNextInlineTag(s, defaultTag);
+      result += rendered;
+    }
+
+    return result;
+  }
+
+  #renderNextInlineTag(s: string, defaultTag: string): [string, string] {
+    let tagMatch = s.match(/◊(\w*)\[/u);
+    if (tagMatch?.index === undefined) return [s, ""];
+
+    let beforeTag = s.slice(0, tagMatch.index);
+    s = s.slice(tagMatch.index + tagMatch[0].length);
+
+    let content;
+    [content, s] = this.#renderNestedInlineTag(s, defaultTag);
+
+    let extraMatch = s.match(/^\[(.*?)\]/u);
+    if (extraMatch) s = s.slice(extraMatch[0].length);
+
+    let tag = tagMatch[1] || defaultTag;
+    let extra = extraMatch?.[1];
+    let rendered = this.#renderInlineTag(tag, content, extra);
+
+    return [beforeTag + rendered, s];
+  }
+
+  #renderNestedInlineTag(s: string, defaultTag: string): [string, string] {
+    let content = "";
+
+    while (s.length > 0) {
+      // find boundary (tag close or next inner tag)
+      let contentMatch = s.match(/^.*?(?=\]|◊\w*\[)/u);
+      if (!contentMatch) {
+        content += s;
+        s = "";
+        break;
+      }
+
+      content += contentMatch[0];
+      s = s.slice(contentMatch[0].length);
+
+      if (s[0] === "◊") {
+        // nested tag: recursively parse it
+        let rendered;
+        [rendered, s] = this.#renderNextInlineTag(s, defaultTag);
+        content += rendered;
+      } else if (s[0] === "]") {
+        // closing bracket: end of content
+        s = s.slice(1);
+        break;
+      }
+    }
+
+    return [content, s];
   }
 
   #renderInlineTag(tag: string, content: string | undefined, extra: string | undefined): string {
@@ -391,6 +517,9 @@ export class Renderer {
 
       case "syn":
         return this.#renderSyntaxLink(content, extra);
+
+      case "tt":
+        return this.#renderTerminal(content);
 
       case "u":
       case "U":
@@ -451,6 +580,11 @@ export class Renderer {
   #renderItalics(s: string | undefined): string {
     if (s === undefined) return errorTag("◊i tag missing body");
     return `<em>${s}</em>`;
+  }
+
+  #renderTerminal(s: string | undefined): string {
+    if (s === undefined) return errorTag("◊tt tag missing body");
+    return `<code class="syntax-terminal">${s}</code>`;
   }
 
   #renderUnicode(s: string | undefined): string {
@@ -565,4 +699,25 @@ function nameCodePoint(s: string): string {
 
 function isObject(x: unknown): x is Record<string, unknown> {
   return typeof x === "object" && x !== null;
+}
+
+function parseCsv(data: string) {
+  try {
+    let header: string[] = [];
+    const columns = (h: string[]) => {
+      header = h;
+      return h;
+    };
+
+    let rows = csv.parse(data, { columns, trim: true, skip_empty_lines: true });
+
+    return {
+      header,
+      rows: rows.map((obj) => Object.values(obj as Record<string, string>)),
+    };
+  } catch (error) {
+    if (!(error instanceof csv.CsvError)) throw error;
+
+    return { error };
+  }
 }
