@@ -13,6 +13,7 @@ indent_size = 2
 indent_size = 4
 dotnet_sort_system_directives_first = true
 dotnet_separate_import_directive_groups = false
+dotnet_diagnostic.CA1720.severity = none
 
 [*.{received,verified}.{json,txt,xml}]
 charset = utf-8-bom

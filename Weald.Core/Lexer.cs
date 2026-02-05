@@ -14,6 +14,10 @@ public static class Lexer
             return Token.End(cursor.Loc);
         }
 
+        switch (cursor.Current) {
+            
+        }
+
         return Token.Invalid(cursor.Current.ToString(), cursor.Loc);
     }
 }

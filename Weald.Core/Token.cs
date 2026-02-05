@@ -4,6 +4,43 @@ public enum TokenTag : byte
 {
     Invalid,
     End,
+    Newline,
+    Name,
+    Integer,
+    Float,
+    String,
+
+    // Keywords
+    KwTrue,
+    KwFalse,
+
+    // Punctuation
+    PDot,
+    PComma,
+    PColon,
+    PBackslash,
+    PPipe,
+    PPlus,
+    PMinus,
+    PStar,
+    PSlash,
+    PPercent,
+    PCaret,
+    PBang,
+    PAndAnd,
+    POrOr,
+    PLess,
+    PLessEqual,
+    PEqual,
+    PBangEqual,
+    PGreaterEqual,
+    PGreater,
+    PParenOpen,
+    PParenClose,
+    PBracketOpen,
+    PBracketClose,
+    PBraceOpen,
+    PBraceClose,
 }
 
 public readonly record struct Token(TokenTag Tag, string Text, Loc Loc)
