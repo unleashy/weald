@@ -56,10 +56,9 @@ Lexical elements:
           ◊caption: newlines
           Newline:
             - U+000A
-            - U+000D U+000A
-      - Newlines are used to separate statements from one another. The only newline characters
-        allowed are line feed and carriage return immediately followed by a line feed, i.e. either
-        Unix-style LF or Windows-style CRLF.
+            - U+000D? U+000A
+      - Newlines are used to separate statements from one another. They are the usual LF, CRLF, or
+        CR.
 
   - Comments:
       - ◊syn:
