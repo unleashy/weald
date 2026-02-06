@@ -235,11 +235,12 @@ output {
 
   &:not(.syntax-terminal) {
     background: var(--colour-accent-a3);
-    color: var(--colour-accent-11);
+    color: var(--colour-accent-12);
 
     padding-inline: 0.5ch;
     padding-block-start: 0.33ch;
     border-radius: 0.25ch;
+    box-shadow: 0 1px 0 0.5px var(--colour-accent-a6);
   }
 }
 
@@ -248,6 +249,14 @@ table {
   align-self: center;
 
   border-collapse: collapse;
+}
+
+caption,
+summary,
+figcaption {
+  font-size: var(--f--1);
+  font-weight: var(--weight-semibold);
+  font-style: italic;
 }
 
 caption {
@@ -385,7 +394,7 @@ a:is(:hover, :focus, :active, :focus) .heading-level {
     margin-inline-start: var(--indent);
   }
 
-  & > :is(div, section, aside, img, figure, table) {
+  & > :is(div, section, aside, img, figure, table, details) {
     margin-inline-start: inherit;
   }
 
@@ -405,13 +414,6 @@ a:is(:hover, :focus, :active, :focus) .heading-level {
   & > * {
     padding-inline: var(--prose-indented-padding);
   }
-}
-
-.syntax-caption,
-caption {
-  font-size: var(--f--1);
-  font-weight: var(--weight-semibold);
-  font-style: italic;
 }
 
 .syntax-caption {
@@ -535,12 +537,17 @@ caption {
   font-weight: var(--weight-semibold);
 }
 
-.note {
-  --colour-accent-a3: #008ff519;
+.note,
+.rationale {
   --colour-accent-5: #c2e5ff;
+  --colour-accent-6: #acd8fc;
   --colour-accent-11: #0d74ce;
   --colour-accent-12: #113264;
+  --colour-accent-a3: #008ff519;
+  --colour-accent-a6: #0088f653;
+}
 
+.note {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 1ch;
@@ -551,9 +558,69 @@ caption {
   border: 1px solid var(--colour-accent-5);
 }
 
+.rationale {
+  padding-inline: unset;
+
+  &:open {
+    padding-block-end: var(--prose-padding);
+
+    background: var(--colour-accent-a3);
+    box-shadow: 0 0 0 1px var(--colour-accent-5);
+  }
+}
+
+.rationale-summary {
+  --padding: var(--prose-padding);
+
+  width: fit-content;
+  padding-block-start: var(--padding);
+  padding-inline: var(--prose-indented-padding);
+  cursor: zoom-in;
+
+  /* targets just the text and not the marker */
+  & > :last-child {
+    text-decoration: underline;
+    text-decoration-color: var(--colour-accent-6);
+    text-underline-offset: 0.15em;
+  }
+
+  :open > & {
+    padding-block: var(--padding);
+    color: var(--colour-accent-12);
+    cursor: zoom-out;
+  }
+
+  &::marker {
+    content: "";
+  }
+
+  &::before {
+    display: inline-block;
+    width: 2ch;
+
+    content: "❧";
+    font-style: normal;
+  }
+
+  :open > &::before {
+    content: "❦";
+  }
+
+  position: relative;
+
+  :not(:open) > &::after {
+    position: absolute;
+    inset: 0;
+    bottom: calc(var(--padding) * -1);
+
+    content: "";
+  }
+}
+
 @media (min-width: 80ch) {
   .ruleset,
-  .note {
+  .note,
+  .rationale {
     border-radius: 0.5ch;
   }
 }

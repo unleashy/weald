@@ -1,11 +1,11 @@
 ---
 ◊meta:
   title: Weald 🌳 Language Specification
-  version: 0.1.0
+  version: 0.2.0
 ---
 Introduction:
   - >
-    Weald is a new programming language taking inspiration from C#, Rust, and Ruby.
+    Weald is a new programming language taking inspiration from C#, Rust, Ruby, and TypeScript.
 
     This document describes the language—mostly informally.
 ---
@@ -51,9 +51,23 @@ Lexical elements:
             - U+0009
             - U+200E
             - U+200F
-      - White space is used to separate input elements. It is otherwise insignificant and should be
-        ignored. The only white space characters allowed are space and tab, plus the left-to-right
-        and right-to-left marks.
+      - >
+        White space is used to separate input elements. It is otherwise insignificant and should be
+        ignored. The only white space characters allowed are space and tab, plus the bidirectional
+        marks.
+
+        The bidirectional marks must not be the only separators between two ◊[name][Names and
+        keywords] tokens.
+
+      - ◊rationale: >
+          Most common languages allow either all Unicode code points with property
+          ◊i[Pattern_White_Space] as white space or allow some subset of it, often including very
+          rarely used characters such as form feed and vertical tab. Weald only allows space and
+          tab, as those are essentially the only characters used for white space in modern
+          programming.
+
+          Bidirectional marks are allowed because they are needed for Unicode text layout. They are
+          forbidden as name separators because they are non-spacing, with no advance width.
 
   - Newlines:
       - ◊syn:
@@ -63,6 +77,11 @@ Lexical elements:
             - U+000D? U+000A
       - Newlines are used to separate statements from one another. They are the usual LF, CRLF, or
         CR.
+
+      - ◊rationale: >
+          Earlier in development, Weald explicitly disallowed CR newlines since they are very rarely
+          used. But this made the lexer more complex for little benefit, so they are allowed,
+          alongside the very common LF (Unix-style) and CRLF (Windows-style) newlines.
 
   - Comments:
       - ◊syn:
@@ -75,6 +94,13 @@ Lexical elements:
             - End
       - Comments are treated like white space and are ignored. The newline at the end of line
         comments is emitted as a normal newline token, if present.
+
+      - ◊rationale: >
+          Aesthetically, the double dash is pretty neat.
+
+          Block comments were left out as they are not usually that common, and line comments can do
+          everything they can without nesting issues. IDE support can help with commenting out large
+          blocks of code.
 
   - Tokens:
       - ◊syn:
@@ -130,6 +156,11 @@ Lexical elements:
 
             The value of a name is the result of normalising its code points using Normalisation
             Form C. Therefore, two names are equal if their NFC forms are equal.
+
+          - ◊rationale: >
+              The vast majority of code uses ASCII exclusively for names, so in theory full Unicode
+              support is dispensable, but it’s cool, so it’s in. Math symbols are also in. The fact
+              that kebab-case is allowed probably feels strange, but I love kebab-case.
 
       - Keywords:
           - ◊syn:
@@ -204,6 +235,35 @@ Lexical elements:
         In any of the above cases, the number is negated if it has a negative sign. Then, the final
         value is checked to fit within its inferred type’s range; if it does not fit within the
         integer range of its type, it is an error.
+
+      - ◊rationale: >
+          ◊b[The types.] The three integer types were chosen for their usefulness. The odd one out
+          is Byte; that one is useful because dealing with files in arbitrary formats is very
+          common, and having a dedicated type that isn’t oversized for this purpose is useful.
+
+          It’s useful to have a full set of integer types like C or Rust, that include “midway”
+          types like 16-bit integers and 32-bit integers. But for a more high-level language like
+          Weald, the added complexity is not outweighed by the benefits. In the interest of
+          simplicity, I settled on the three types above.
+
+          Also in the interest of simplicity and for preventing indexing bugs, Java kept out signed
+          integers. I thought that was too far; unsigned integers are useful because you often do
+          really want to make sure something cannot be negative—most often for an index. Overflow is
+          a danger, but say you subtract from zero, and you accidentally index into an array with
+          the resulting value that wrapped around (which is probably close to 2◊sup[64 − 1]): the
+          index operation will fail, because it’s out of bounds; same as −1 or 9 999 999 would.
+          Using signed or unsigned integers for indexing is orthogonal to the permanently
+          necessary—and enforced—bounds checking.
+
+          ◊b[The syntax.] The hexadecimal and binary prefixes only accept lowercase ◊tt[x] or
+          ◊tt[b]. I don’t know why other languages allow uppercase prefixes, but I thought it was
+          rather unnecessary.
+
+          Most other languages don’t parse the positive/negative sign as part of the integer
+          literal, instead having it be an application of unary operations. This is totally fine,
+          but it adds a bit of complexity for bounds checking the literals, as the parser needs to
+          do that check by inspecting the syntax nodes. Parsing the sign as part of the integer
+          literal is simpler.
 
   - Floats:
       - ◊syn:
@@ -312,6 +372,14 @@ Lexical elements:
 
       - ◊b[Wysiwyg interpretation.] Escape sequences are kept verbatim. Wysiwyg strings are prefixed
         with an at-sign ◊code[@].
+
+      - ◊rationale: >
+          The string syntax is fairly standard and similar to C#’s. The main difference is the valid
+          escape sequences: I removed most of the rarer ones such as ◊tt[\v], ◊tt[\f], and ◊tt[\a],
+          and added ◊tt[\e]. The rarer escape sequences are fairly uninteresting when you have
+          access to Unicode escapes, but ◊tt[\e] is very useful for printing ANSI escape sequences
+          used in terminal formatting—◊code["Hello, \e[31mworld\e[0m!"] is more readable than
+          ◊code["Hello, \u001B[31mworld\u001B[0m!"].
 
   - Punctuation:
       - ◊syn:

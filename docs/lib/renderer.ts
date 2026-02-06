@@ -155,6 +155,9 @@ export class Renderer {
       case "p":
         return this.#renderParagraph(value);
 
+      case "rationale":
+        return this.#renderRationale(value);
+
       case "syn":
         return this.#renderSyntax(value);
 
@@ -282,6 +285,20 @@ export class Renderer {
         .map((p) => this.#renderInlineTags(p))
         .map((p) => `<p>${p}</p>`),
     );
+  }
+
+  #renderRationale(value: unknown) {
+    if (typeof value !== "string") {
+      this.#renderError("◊rationale tag with non-string contents");
+      return;
+    }
+
+    this.#output.push(`<details class="rationale">`);
+    this.#output.push(`<summary class="rationale-summary"><span>Rationale</span></summary>`);
+    this.#output.push(`<div class="rationale-content prose">`);
+    this.#renderParagraph(value);
+    this.#output.push(`</div>`);
+    this.#output.push(`</details>`);
   }
 
   #renderSyntax(ruleset: unknown) {
