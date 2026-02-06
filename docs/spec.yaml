@@ -22,7 +22,7 @@ Lexical elements:
           ◊caption: source text, characters, and initials
           SourceText: Bom? Hashbang? Char* End
           Bom: U+FEFF
-          Hashbang: "`#!` LineCommentChar* LineCommentEnd"
+          Hashbang: "`#!` CommentChar* CommentEnd"
           Char: ◊p any Unicode code point but not ◊[ForbiddenChar]
           ForbiddenChar:
             - ◊p any Control code point but not ◊[Whitespace] or ◊[Newline]
@@ -68,16 +68,13 @@ Lexical elements:
       - ◊syn:
           ◊caption: comments
           Comment:
-            - "`//` LineCommentChar* CommentEnd"
-            - "`/*` BlockCommentChar* `*/`"
-          LineCommentChar: Char but not Newline
-          BlockCommentChar: Char but not `*/`
+            - "`--` CommentChar* CommentEnd"
+          CommentChar: Char but not Newline
           CommentEnd:
             - Newline
             - End
       - Comments are treated like white space and are ignored. The newline at the end of line
-        comments is emitted as a normal newline token; newlines within block comments are also
-        emitted.
+        comments is emitted as a normal newline token, if present.
 
   - Tokens:
       - ◊syn:
@@ -277,9 +274,9 @@ Lexical elements:
         of code points within the triple quotes, applying the following transformations in order:
 
       - ◊ol:
-          - Trim leading and trailing whitespace
+          - Trim leading and trailing white space
           - Split the sequence into lines at each ◊syn[Newline]
-          - For each line, remove the common leading whitespace, ignoring blank lines
+          - For each line, remove the common leading white space, ignoring blank lines
           - Join the resulting lines with ◊U[000A]
 
       - >
@@ -309,7 +306,7 @@ Lexical elements:
       - Any other escape sequences are an error. Also, the Unicode ◊code[\u \x] escape sequences
         require a valid code point in hexadecimal.
 
-      - ◊b[Continuation escapes.] When this escape is encountered, the newline and any whitespace
+      - ◊b[Continuation escapes.] When this escape is encountered, the newline and any white space
         after are replaced by an empty string. That is, the continuation escape allows line strings
         to span multiple lines. Block strings may also use it.
 
