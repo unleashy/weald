@@ -19,7 +19,10 @@ Lexical elements:
 
   - Source text:
       - ◊syn:
-          ◊caption: source text
+          ◊caption: source text, characters, and initials
+          SourceText: Bom? Hashbang? Char* End
+          Bom: U+FEFF
+          Hashbang: "`#!` LineCommentChar* LineCommentEnd"
           Char: ◊p any Unicode code point but not ◊[ForbiddenChar]
           ForbiddenChar:
             - ◊p any Control code point but not ◊[Whitespace] or ◊[Newline]
@@ -32,7 +35,8 @@ Lexical elements:
         No other encoding is supported.
 
         The source text may start with a ◊abbr[BOM][byte order mark] ◊U[FEFF] which is ignored for
-        the purposes of lexical analysis.
+        the purposes of lexical analysis. It can also start with a hashbang line, which is also
+        ignored.
 
         There are certain characters that are ◊syn[forbidden][ForbiddenChar] in source text; if
         source text contains these characters, even within strings or comments, it is an error. If
