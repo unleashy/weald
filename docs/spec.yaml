@@ -289,9 +289,18 @@ Lexical elements:
       - >
         ◊b[Determining the value of a float.] Compute the mathematical value represented by the
         literal, ignoring underscore separators. Round the value to fit within a binary64 value
-        using the ◊code[roundTiesToEven] rounding mode. If the absolute value is too large to
+        using the ◊tt[roundTiesToEven] rounding mode. If the absolute value is too large to
         represent (overflow), return a signed infinity. If the absolute value is too small to
         represent (underflow), return a subnormal or signed zero as per IEEE 754 rules.
+
+      - ◊rationale: >
+          A lot of languages allow floats to be represented with a leading dot ◊tt[.123] or trailing
+          dot ◊tt[123.], but this creates unneeded complexity in the lexer just to save one
+          character (the zero). So Weald does not interpret leading or trailing dots as float
+          literals; you’ll have to put the zero in.
+
+          The ◊tt[e] exponent prefix is not allowed to be uppercase in the interest of simplicity,
+          much like the the ◊tt[0x]/◊tt[0b] prefix case for integers.
 
   - Strings:
       - ◊syn:
