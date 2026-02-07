@@ -264,6 +264,10 @@ caption {
   padding-block-start: 0.5rem;
 }
 
+figcaption {
+  padding-inline-start: var(--prose-indented-padding);
+}
+
 table,
 thead,
 tr {
@@ -441,7 +445,7 @@ a:is(:hover, :focus, :active, :focus) .heading-level {
   display: inline-flex;
   align-items: baseline;
   flex-wrap: wrap;
-  gap: 1ch;
+  column-gap: 1ch;
 }
 
 .syntax-parens,
@@ -498,7 +502,7 @@ a:is(:hover, :focus, :active, :focus) .heading-level {
   flex-direction: column;
 
   & > * + * {
-    margin-block-start: var(--leading);
+    margin-block-start: 0.5lh;
   }
 }
 
@@ -629,6 +633,15 @@ a:is(:hover, :focus, :active, :focus) .heading-level {
   .note,
   .rationale {
     border-radius: 0.5ch;
+  }
+}
+
+@media (max-width: 80ch) {
+  .ruleset,
+  .note,
+  .rationale {
+    border-left-color: transparent;
+    border-right-color: transparent;
   }
 }
 
