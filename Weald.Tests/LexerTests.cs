@@ -46,4 +46,11 @@ public class LexerTests
     [TestCase("Unicode", "#! 🌈🌈🌈🌈\n")]
     [TestCase("WithBom", "\uFEFF#!abcde\n")]
     public Task Hashbang(string name, string text) => Verify(text).UseTextForParameters(name);
+
+    [Test]
+    public Task Punctuation() =>
+        Verify(@". , : \ | + - * / % ^ ! && || < <= == != >= > = ( ) [ ] { }");
+
+    [Test]
+    public Task InvalidPunctuation() => Verify(@"#");
 }

@@ -64,24 +64,22 @@ public struct Lexer(Source source) : IEnumerable<Token>
 
         state = State.Tokenising;
         var c = _cursor.Peek;
-        switch (c) {
-            case Rune(' ' or '\t' or '\u200E' or '\u200F'): return NextWhitespace();
 
-            case Rune('\n' or '\r'): return NextNewlineOrComment();
-
-            case Rune('-'): {
-                _cursor.Next();
-
-                return _cursor.Match('-')
-                    ? NextComment()
-                    : Token.Punctuation(TokenTag.PMinus, _cursor.Loc);
-            }
-
-            default: {
-                _cursor.Next();
-                return Token.Invalid($"unexpected character {Rune.Escape(c)}", _cursor.Loc);
-            }
+        if (RuneOps.IsWhitespace(c)) {
+            return NextWhitespace();
         }
+        else if (RuneOps.IsNewline(c)) {
+            return NextNewlineOrComment();
+        }
+        else if (_cursor.Match("--")) {
+            return NextComment();
+        }
+        else if (RuneOps.IsPunctuation(c)) {
+            return NextPunctuation();
+        }
+
+        _cursor.Next();
+        return Token.Invalid($"unexpected character {Rune.Escape(c)}", _cursor.Loc);
     }
 
     private Token? NextWhitespace()
@@ -112,6 +110,55 @@ public struct Lexer(Source source) : IEnumerable<Token>
     {
         _cursor.NextUntil(RuneOps.IsNewline);
         return NextNewlineOrComment();
+    }
+
+    private Token NextPunctuation()
+    {
+        var c = _cursor.Peek;
+        _cursor.Next();
+
+        TokenTag? tag = c switch {
+            Rune('(')  => TokenTag.PParenOpen,
+            Rune(')')  => TokenTag.PParenClose,
+            Rune('[')  => TokenTag.PBracketOpen,
+            Rune(']')  => TokenTag.PBracketClose,
+            Rune('{')  => TokenTag.PBraceOpen,
+            Rune('}')  => TokenTag.PBraceClose,
+            Rune('*')  => TokenTag.PStar,
+            Rune('\\') => TokenTag.PBackslash,
+            Rune('%')  => TokenTag.PPercent,
+            Rune('^')  => TokenTag.PCaret,
+            Rune('+')  => TokenTag.PPlus,
+            Rune('-')  => TokenTag.PMinus,
+            Rune(',')  => TokenTag.PComma,
+            Rune(':')  => TokenTag.PColon,
+            Rune('.')  => TokenTag.PDot,
+            Rune('/')  => TokenTag.PSlash,
+
+            // ! !=
+            Rune('!') => _cursor.Match('=') ? TokenTag.PBangEqual : TokenTag.PBang,
+
+            // & &&
+            Rune('&') => _cursor.Match('&') ? TokenTag.PAndAnd : null,
+
+            // | ||
+            Rune('|') => _cursor.Match('|') ? TokenTag.POrOr : TokenTag.POr,
+
+            // < <=
+            Rune('<') => _cursor.Match('=') ? TokenTag.PLessEqual : TokenTag.PLess,
+
+            // = ==
+            Rune('=') => _cursor.Match('=') ? TokenTag.PEqualEqual : TokenTag.PEqual,
+
+            // > >=
+            Rune('>') => _cursor.Match('=') ? TokenTag.PGreaterEqual : TokenTag.PGreater,
+
+            _ => null,
+        };
+
+        return tag is {} it
+            ? Token.Punctuation(it, _cursor.Loc)
+            : Token.Invalid("invalid punctuation", _cursor.Loc);
     }
 
     #region Enumerable implementation
