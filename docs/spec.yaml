@@ -295,19 +295,49 @@ Lexical elements:
 
   - Strings:
       - ◊syn:
-          ◊caption: strings
+          ◊caption: strings and escape sequences
           String:
-            - StringStandard
-            - StringWysiwyg
-          StringStandard:
-            - StringLine
-            - StringBlock
-          StringWysiwyg:
-            - "`@` StringStandard"
-          StringLine: '`"` StringLineChar* `"`'
-          StringLineChar: CharEscapable but not Newline
-          StringBlock: '`"""` Whitespace* Newline StringBlockChar* Newline Whitespace* `"""`'
-          StringBlockChar: CharEscapable
+            - StringStd
+            - StringRaw
+
+          ◊separator_:
+
+          StringStd:
+            - StringStdLine
+            - StringStdBlock
+
+          StringStdLine: >
+            `"` StringStdLineChar* `"`
+          StringStdLineChar: CharEscapable but not StringStdLineEnd
+          StringStdLineEnd:
+            - Newline
+            - '`"`'
+
+          StringStdBlock: >
+            `"""` Whitespace* Newline StringStdBlockChar* Newline Whitespace* `"""`
+          StringStdBlockChar: >
+            CharEscapable but not `"""`
+
+          ◊separator__:
+
+          StringRaw:
+            - StringRawLine
+            - StringRawBlock
+
+          StringRawLine: >
+            '`' StringRawLineChar* '`'
+          StringRawLineChar: Char but not StringRawLineEnd
+          StringRawLineEnd:
+            - Newline
+            - "'`'"
+
+          StringRawBlock: >
+            '```' Whitespace* Newline StringRawBlockChar* Newline Whitespace* '```'
+          StringRawBlockChar: >
+            CharEscapable but not '```'
+
+          ◊separator___:
+
           CharEscapable:
             - Char but not `\`
             - "`\\` Escape"
@@ -325,13 +355,13 @@ Lexical elements:
         A string is a sequence of zero or more Unicode code points, resolving to a ◊i[content]
         value. Strings have with multiple literal forms, described below.
 
-        ◊b[Line strings.] Enclosed in double quotes, ◊code["like this"]. They cannot contain
-        newlines or double quotes. The content of a line string is the sequence of code points
-        within the double quotes, so the content of the previous example is just ◊code[like this].
+        ◊b[Line strings.] Enclosed in one set of quotes. They cannot contain newlines or their own
+        quotes. The content of a line string is the sequence of code points within the quotes.
 
-        ◊b[Block strings.] Enclosed in triple quotes. They can span multiple lines and may contain
-        double quotes (but not three consecutively). The content of a block string is the sequence
-        of code points within the triple quotes, applying the following transformations in order:
+        ◊b[Block strings.] Enclosed in a triple set of quotes. They can span multiple lines and may
+        contain their quotes (but not three consecutively). The content of a block string is the
+        sequence of code points within the triple quotes, applying the following transformations in
+        order:
 
       - ◊ol:
           - Trim leading and trailing white space
@@ -340,10 +370,9 @@ Lexical elements:
           - Join the resulting lines with ◊U[000A]
 
       - >
-        The ◊i[content] can then be further interpreted in two ways: standard and
-        ◊abbr[wysiwyg][what you see is what you get]. In the standard form, ◊i[escape sequences] are
-        replaced by their corresponding values. In the wysiwyg form, escape sequences are treated as
-        literal code points.
+        The ◊i[content] can then be further interpreted in two ways: standard and raw. In the
+        standard form, ◊i[escape sequences] are replaced by their corresponding values. In the raw
+        form, escape sequences are treated as literal code points.
 
         ◊b[Standard interpretation.] Escape sequences are replaced by their corresponding values as
         per the following table:
@@ -370,8 +399,8 @@ Lexical elements:
         after are replaced by an empty string. That is, the continuation escape allows line strings
         to span multiple lines. Block strings may also use it.
 
-      - ◊b[Wysiwyg interpretation.] Escape sequences are kept verbatim. Wysiwyg strings are prefixed
-        with an at-sign ◊code[@].
+      - ◊b[Raw interpretation.] Escape sequences are kept verbatim. Raw strings have their quotes
+        replaced by backticks.
 
       - ◊rationale: >
           The string syntax is fairly standard and similar to C#’s. The main difference is the valid
@@ -380,6 +409,11 @@ Lexical elements:
           access to Unicode escapes, but ◊tt[\e] is very useful for printing ANSI escape sequences
           used in terminal formatting—◊code["Hello, \e[31mworld\e[0m!"] is more readable than
           ◊code["Hello, \u001B[31mworld\u001B[0m!"].
+
+          Raw strings use backticks instead of C#’s ◊tt[@]-prefix so that you can write quotes
+          within strings without escaping them, which is a fairly common need.
+
+          Interpolated strings will be added later.
 
   - Punctuation:
       - ◊syn:

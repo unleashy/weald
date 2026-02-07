@@ -410,10 +410,6 @@ a:is(:hover, :focus, :active, :focus) .heading-level {
 
   padding-inline: unset;
   margin-block-end: 1rem;
-
-  & > * {
-    padding-inline: var(--prose-indented-padding);
-  }
 }
 
 .syntax-caption {
@@ -491,6 +487,10 @@ a:is(:hover, :focus, :active, :focus) .heading-level {
     color: inherit;
     text-decoration-line: none;
   }
+
+  & > * {
+    padding-inline: var(--prose-indented-padding);
+  }
 }
 
 .rule {
@@ -515,6 +515,13 @@ a:is(:hover, :focus, :active, :focus) .heading-level {
     color: var(--colour-grey-12);
     text-decoration-line: none;
   }
+}
+
+.ruleset-separator {
+  height: 1px;
+  display: block;
+  padding-inline: unset;
+  border-top: 2px dashed var(--colour-accent-a6);
 }
 
 .rule-def {

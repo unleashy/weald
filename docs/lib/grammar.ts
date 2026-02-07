@@ -83,12 +83,11 @@ function primaryTerm(s: string) {
   }
 }
 
-// Terminal: Ws '```' | Ws '`' .+ '`' | Ws 'U+' [A-Fa-f0-9]+
+// Terminal: Ws '`' .+ '`' | Ws `'` .+ `'` | Ws 'U+' [A-Fa-f0-9]+
 function terminal(s: string) {
-  if (s.startsWith("```")) {
-    return [{ type: "terminal", value: "`" }, s.slice(3)] as const;
-  } else if (s.startsWith("`")) {
-    let end = s.indexOf("`", 1);
+  if (s.startsWith("`") || s.startsWith("'")) {
+    let quote = s[0];
+    let end = s.indexOf(quote, 1);
     if (end === -1) {
       throw new SyntaxError(`unclosed string: ${JSON.stringify(s)}`);
     }

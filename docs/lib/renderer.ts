@@ -386,7 +386,13 @@ class Renderer implements IRenderer {
   }
 
   #renderRuleHeader(rule: string): boolean {
-    if (rule.startsWith("◊")) return false;
+    if (rule.startsWith("◊")) {
+      if (rule.startsWith("◊separator")) {
+        this.output.push(`<div class="ruleset-separator" role="separator"></div>`);
+      }
+
+      return false;
+    }
 
     let ref = this.#findSyntaxRef(rule);
     if (ref === undefined) {
