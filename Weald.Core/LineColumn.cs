@@ -12,7 +12,8 @@ public readonly record struct LineColumn
 
             if (Start.Line < End.Line - 1) {
                 s += "-" + End;
-            } else if (Start.Column < End.Column - 1) {
+            }
+            else if (Start.Column < End.Column - 1) {
                 s += "-" + End.Column;
             }
 
@@ -88,7 +89,8 @@ file readonly struct LineIndices(ImmutableArray<int> indices)
             if (IsCrLf(text, i)) {
                 indices.Add(i + 2);
                 i += 1; // skip \n
-            } else if (text[i] == '\n') {
+            }
+            else if (text[i] == '\n') {
                 indices.Add(i + 1);
             }
         }

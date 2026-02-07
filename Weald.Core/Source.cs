@@ -27,6 +27,7 @@ public readonly struct Source : IEnumerable<char>
     }
 
     public char this[int index] => Body[index];
+
     public ReadOnlySpan<char> this[Range range] => Body[range];
 
     public int Length => Body.Length;
