@@ -385,7 +385,7 @@ Lexical elements:
       - ◊syn:
           ◊caption: punctuation
           Punctuation: >
-            ◊one-of . , : \ | + - * / % ^ ! && || < <= == != >= > = ( ) [ ] { }
+            ◊one-of ( ) [ ] { } * \ && % ^ | || + - , : . / < <= = == ! != >= >
       - Punctuators are used to mark or separate syntactic constructs in a program. While only some
         punctuators are currently used, every ASCII code point that is also Pattern_Syntax is
         reserved for future use; this is a profile of

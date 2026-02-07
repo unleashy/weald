@@ -49,7 +49,7 @@ public class LexerTests
 
     [Test]
     public Task Punctuation() =>
-        Verify(@". , : \ | + - * / % ^ ! && || < <= == != >= > = ( ) [ ] { }");
+        Verify(@"( ) [ ] { } * \ && % ^ | || + - , : . / < <= = == ! != >= >");
 
     [Test]
     public Task InvalidPunctuation() => Verify(@"#");
