@@ -1,4 +1,4 @@
-import { Renderer } from "./lib/renderer.ts";
+import { render } from "./lib/renderer.ts";
 import spec from "./spec.yaml";
 
 export const SPEC_HTML_FILE = `${import.meta.dirname}/spec.html`;
@@ -35,11 +35,11 @@ const SHELL = `
 `;
 
 let date = new Date();
-let output = new Renderer().render(spec, SHELL, (output, toc, meta) => ({
+let output = render(spec, SHELL, (renderer, meta) => ({
   title: meta.title,
   version: meta.version,
   date: date.toISOString().split("T")[0],
-  output,
-  toc,
+  output: renderer.renderSpec(),
+  toc: renderer.renderToc(),
 }));
 await Bun.write(SPEC_HTML_FILE, output);

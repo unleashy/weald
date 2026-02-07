@@ -3,6 +3,38 @@ import { unicodeName } from "unicode-name";
 import * as csv from "csv-parse/sync";
 import { parseTerms, type RootTerm, type Term } from "./grammar.ts";
 
+export interface IRenderer {
+  renderSpec: () => string;
+  renderToc: () => string;
+}
+
+export type Spec = Array<Record<string, unknown>>;
+
+export function render(
+  spec: Spec,
+  shell: string,
+  getProps: (
+    renderer: IRenderer,
+    meta: Record<string, string>,
+  ) => Record<string, string | undefined>,
+): string {
+  let meta = spec[0]?.["◊meta"] as Record<string, string> | undefined;
+  if (!isObject(meta)) {
+    throw new Error("No metadata found");
+  }
+
+  let rest = spec.slice(1);
+
+  let nonNumberedHeadings = Array.isArray(meta["non-numbered-headings"])
+    ? meta["non-numbered-headings"]
+    : [];
+
+  let renderer = new Renderer([], new Slugger(), rest, nonNumberedHeadings);
+
+  let props = getProps(renderer, meta);
+  return shell.replaceAll(/◊(\w+)/gu, (s, prop) => props[prop] ?? s).trim();
+}
+
 type Children = Array<Record<string, unknown> | string>;
 
 interface Ref {
@@ -16,42 +48,25 @@ interface SectionRef extends Ref {
 
 interface SyntaxRef extends Ref {}
 
-export class Renderer {
-  readonly #slugger: Slugger = new Slugger();
-  #output: string[] = [];
-  #sectionRefs: SectionRef[] = [];
-  #syntaxRefs: Map<string, SyntaxRef> = new Map();
-  #nonNumberedHeadings: string[] = [];
+class Renderer implements IRenderer {
+  readonly #sectionRefs: SectionRef[] = [];
+  readonly #syntaxRefs: Map<string, SyntaxRef> = new Map();
 
-  render(
-    spec: Array<Record<string, unknown>>,
-    shell: string,
-    getProps: (
-      output: string,
-      toc: string,
-      meta: Record<string, string>,
-    ) => Record<string, string | undefined>,
-  ): string {
-    let meta = spec[0]?.["◊meta"] as Record<string, string> | undefined;
-    if (!isObject(meta)) {
-      throw new Error("No metadata found");
-    }
-
-    let rest = spec.slice(1);
-
-    this.#nonNumberedHeadings = Array.isArray(meta["non-numbered-headings"])
-      ? meta["non-numbered-headings"]
-      : [];
-
-    this.#collectRefs(rest);
-    let out = this.#renderOutput(rest);
-    let toc = this.#renderToc();
-
-    let props = getProps(out, toc, meta);
-    return shell.replaceAll(/◊(\w+)/gu, (s, prop) => props[prop] ?? s).trim();
+  constructor(
+    readonly output: string[],
+    readonly slugger: Slugger,
+    readonly spec: Spec,
+    readonly nonNumberedHeadings: string[] = [],
+  ) {
+    this.#collectRefs(spec);
   }
 
-  #renderToc(): string {
+  renderSpec(): string {
+    this.#renderChildren(this.spec, 1);
+    return this.output.join("\n");
+  }
+
+  renderToc(): string {
     let tocOutput: string[] = [];
 
     const childrenOfLevel = (levelStack: number[]) => {
@@ -75,12 +90,6 @@ export class Renderer {
 
     renderTocSection([]);
     return tocOutput.join("\n");
-  }
-
-  #renderOutput(spec: unknown[]): string {
-    this.#output = [];
-    this.#renderChildren(spec, 1);
-    return this.#output.join("\n");
   }
 
   #renderChildren(children: unknown[], level: number) {
@@ -126,8 +135,8 @@ export class Renderer {
       ? `<span class="heading-level">${dottedLevel}</span>&nbsp;`
       : "";
 
-    this.#output.push(`<section id="${slug}" class="prose">`);
-    this.#output.push(`<${tag}><a href="#${slug}">${prefix}${name}</a></${tag}>`);
+    this.output.push(`<section id="${slug}" class="prose">`);
+    this.output.push(`<${tag}><a href="#${slug}">${prefix}${name}</a></${tag}>`);
 
     if (Array.isArray(value)) {
       this.#renderChildren(value, level + 1);
@@ -135,7 +144,7 @@ export class Renderer {
       this.#renderTag("p", value);
     }
 
-    this.#output.push(`</section>`);
+    this.output.push(`</section>`);
   }
 
   #renderTag(name: string, value: unknown) {
@@ -194,28 +203,28 @@ export class Renderer {
       caption = `Table: ${table["◊caption"]}`;
     }
 
-    this.#output.push(`<table>`);
-    if (caption) this.#output.push(`<caption>${caption}</caption>`);
+    this.output.push(`<table>`);
+    if (caption) this.output.push(`<caption>${caption}</caption>`);
 
-    this.#output.push("<thead>");
-    this.#output.push("<tr>");
+    this.output.push("<thead>");
+    this.output.push("<tr>");
     for (let column of header) {
-      this.#output.push(`<th scope="col">${this.#renderInlineTags(column)}</th>`);
+      this.output.push(`<th scope="col">${this.#renderInlineTags(column)}</th>`);
     }
-    this.#output.push("</tr>");
-    this.#output.push("</thead>");
+    this.output.push("</tr>");
+    this.output.push("</thead>");
 
-    this.#output.push("<tbody>");
+    this.output.push("<tbody>");
     for (let row of rows) {
-      this.#output.push("<tr>");
+      this.output.push("<tr>");
       for (let cell of row) {
-        this.#output.push(`<td>${this.#renderInlineTags(cell)}</td>`);
+        this.output.push(`<td>${this.#renderInlineTags(cell)}</td>`);
       }
-      this.#output.push("</tr>");
+      this.output.push("</tr>");
     }
-    this.#output.push("</tbody>");
+    this.output.push("</tbody>");
 
-    this.#output.push("</table>");
+    this.output.push("</table>");
   }
 
   #renderDefinitionList(value: unknown) {
@@ -224,13 +233,13 @@ export class Renderer {
       return;
     }
 
-    this.#output.push("<dl>");
+    this.output.push("<dl>");
     for (let [term, def] of Object.entries(value)) {
       let renderedTerm = this.#renderInlineTags(term);
       let renderedDef = this.#renderInlineTags(String(def));
-      this.#output.push(`<div><dt>${renderedTerm}</dt><dd>${renderedDef}</dd></div>`);
+      this.output.push(`<div><dt>${renderedTerm}</dt><dd>${renderedDef}</dd></div>`);
     }
-    this.#output.push("</dl>");
+    this.output.push("</dl>");
   }
 
   #renderNote(value: unknown) {
@@ -239,11 +248,11 @@ export class Renderer {
       return;
     }
 
-    this.#output.push(`<aside class="note"><strong class="colour:accent-12">Note:</strong>`);
-    this.#output.push(`<div>`);
+    this.output.push(`<aside class="note"><strong class="colour:accent-12">Note:</strong>`);
+    this.output.push(`<div>`);
     this.#renderParagraph(value);
-    this.#output.push(`</div>`);
-    this.#output.push(`</aside>`);
+    this.output.push(`</div>`);
+    this.output.push(`</aside>`);
   }
 
   #renderOrderedList(value: unknown) {
@@ -260,13 +269,13 @@ export class Renderer {
       return;
     }
 
-    this.#output.push(`<${tag}>`);
+    this.output.push(`<${tag}>`);
     for (let item of value) {
-      this.#output.push(`<li>`);
+      this.output.push(`<li>`);
       this.#renderParagraph(item);
-      this.#output.push(`</li>`);
+      this.output.push(`</li>`);
     }
-    this.#output.push(`</${tag}>`);
+    this.output.push(`</${tag}>`);
   }
 
   #renderParagraph(value: unknown) {
@@ -275,7 +284,7 @@ export class Renderer {
       return;
     }
 
-    this.#output.push(
+    this.output.push(
       ...value
         .trim()
         .split("\n")
@@ -293,12 +302,12 @@ export class Renderer {
       return;
     }
 
-    this.#output.push(`<details class="rationale">`);
-    this.#output.push(`<summary class="rationale-summary"><span>Rationale</span></summary>`);
-    this.#output.push(`<div class="rationale-content prose">`);
+    this.output.push(`<details class="rationale">`);
+    this.output.push(`<summary class="rationale-summary"><span>Rationale</span></summary>`);
+    this.output.push(`<div class="rationale-content prose">`);
     this.#renderParagraph(value);
-    this.#output.push(`</div>`);
-    this.#output.push(`</details>`);
+    this.output.push(`</div>`);
+    this.output.push(`</details>`);
   }
 
   #renderSyntax(ruleset: unknown) {
@@ -312,10 +321,10 @@ export class Renderer {
       caption += ` for ${ruleset["◊caption"]}`;
     }
 
-    this.#output.push(`<figure class="syntax">`);
-    this.#output.push(`<figcaption class="syntax-caption">${caption}</figcaption>`);
+    this.output.push(`<figure class="syntax">`);
+    this.output.push(`<figcaption class="syntax-caption">${caption}</figcaption>`);
     this.#renderRuleset(ruleset);
-    this.#output.push("</figure>");
+    this.output.push("</figure>");
   }
 
   #renderRuleset(value: Record<string, unknown>) {
@@ -327,13 +336,13 @@ export class Renderer {
       return (choices as unknown[]).filter(Boolean).map(String);
     }
 
-    this.#output.push(`<dl class="ruleset">`);
+    this.output.push(`<dl class="ruleset">`);
 
     for (let [rule, choices] of Object.entries(value)) {
       if (!this.#renderRuleHeader(rule)) continue;
 
       for (let choice of normaliseRuleChoices(choices)) {
-        this.#output.push(`<dd class="rule-def">`);
+        this.output.push(`<dd class="rule-def">`);
 
         let [_, tag, rest] = choice.match(/^(◊p|◊one-of)?\s*(.*)/u)!;
         if (tag === "◊p") {
@@ -344,36 +353,36 @@ export class Renderer {
           this.#renderRuleChoice(choice);
         }
 
-        this.#output.push(`</dd>`);
+        this.output.push(`</dd>`);
       }
 
-      this.#output.push(`</div>`);
+      this.output.push(`</div>`);
     }
 
-    this.#output.push(`</dl>`);
+    this.output.push(`</dl>`);
   }
 
   #renderRuleProse(rest: string) {
-    this.#output.push(`<span class="syntax-prose">`);
-    this.#output.push(this.#renderInlineTags(rest.trim(), "syn"));
-    this.#output.push(`</span>`);
+    this.output.push(`<span class="syntax-prose">`);
+    this.output.push(this.#renderInlineTags(rest.trim(), "syn"));
+    this.output.push(`</span>`);
   }
 
   #renderRuleOneOf(rest: string) {
     let terminals = rest.trim().split(/\s+/);
 
-    this.#output.push(`<span>`);
-    this.#output.push(`<span class="syntax-one-of">one of</span>`);
-    this.#output.push(`<span class="syntax-seq">`);
-    for (let t of terminals) this.#output.push(`<span class="syntax-terminal">${t}</span>`);
-    this.#output.push(`</span>`);
-    this.#output.push(`</span>`);
+    this.output.push(`<span>`);
+    this.output.push(`<span class="syntax-one-of">one of</span>`);
+    this.output.push(`<span class="syntax-seq">`);
+    for (let t of terminals) this.output.push(`<span class="syntax-terminal">${t}</span>`);
+    this.output.push(`</span>`);
+    this.output.push(`</span>`);
   }
 
   #renderRuleChoice(choice: string) {
-    this.#output.push(`<span>`);
-    this.#output.push(this.#renderGrammar(choice));
-    this.#output.push(`</span>`);
+    this.output.push(`<span>`);
+    this.output.push(this.#renderGrammar(choice));
+    this.output.push(`</span>`);
   }
 
   #renderRuleHeader(rule: string): boolean {
@@ -385,8 +394,8 @@ export class Renderer {
       return false;
     }
 
-    this.#output.push(`<div class="rule">`);
-    this.#output.push(
+    this.output.push(`<div class="rule">`);
+    this.output.push(
       `<dt class="rule-name">` +
         `<a href="#${ref.slug}" class="syntax-nonterminal"><dfn id="${ref.slug}">${rule}</dfn></a>` +
         `</dt>`,
@@ -463,7 +472,7 @@ export class Renderer {
   }
 
   #renderError(message: string) {
-    this.#output.push(`<p>${errorTag(`Error: ${message}`)}</p>`);
+    this.output.push(`<p>${errorTag(`Error: ${message}`)}</p>`);
   }
 
   #renderInlineTags(s: string, defaultTag: string = "a"): string {
@@ -628,8 +637,6 @@ export class Renderer {
   }
 
   #collectRefs(children: Children) {
-    this.#sectionRefs = [];
-    this.#syntaxRefs = new Map();
     this.#collectRefsWithLevel(children, [1]);
   }
 
@@ -680,7 +687,7 @@ export class Renderer {
   #addSectionRef(name: string, levelStack: number[]): SectionRef {
     let ref: SectionRef = {
       name,
-      slug: this.#slugger.slug(`sec-${name}`, true),
+      slug: this.slugger.slug(`sec-${name}`, true),
       levelStack: levelStack.slice(),
     };
 
@@ -703,11 +710,11 @@ export class Renderer {
   }
 
   #isNumbered(name: string): boolean {
-    return !this.#nonNumberedHeadings.includes(name);
+    return !this.nonNumberedHeadings.includes(name);
   }
 
   #alert(message: string) {
-    this.#output.push(`<p>${errorTag(`Ref collection error: ${message}`)}</p>`);
+    this.output.push(`<p>${errorTag(`Ref collection error: ${message}`)}</p>`);
   }
 }
 
