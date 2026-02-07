@@ -16,6 +16,6 @@
   "scripts": {
     "render": "bun run docs/render.ts",
     "render:watch": "bun --hot run docs/serve.ts",
-    "render:prod": "bun run docs/render.ts && bun build --target=bun --production --outdir docs/dist docs/spec.html"
+    "render:prod": "bun run docs/render.prod.ts"
   }
 }
