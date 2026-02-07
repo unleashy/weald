@@ -43,14 +43,19 @@ public enum TokenTag : byte
     PBraceClose,
 }
 
-public readonly record struct Token(TokenTag Tag, string Text, Loc Loc)
+public readonly record struct Token(TokenTag Tag, string? Text, Loc Loc)
 {
-    public Token() : this(TokenTag.Invalid, "", default)
-    {}
-
-    public static Token End(Loc loc) => new(TokenTag.End, "", loc);
+    public static Token End(Loc loc) => new(TokenTag.End, null, loc);
 
     public static Token Invalid(string message, Loc loc) => new(TokenTag.Invalid, message, loc);
 
-    public override string ToString() => $"Token.{Tag}={(Text ?? "").Escape()}@{Loc}";
+    public static Token Newline(Loc loc) => new(TokenTag.Newline, null, loc);
+
+    public static Token Punctuation(TokenTag tag, Loc loc) => new(tag, null, loc);
+
+    public override string ToString() =>
+        Text switch {
+            {} text => $"Token.{Tag}={text.Escape()}@{Loc}",
+            _       => $"Token.{Tag}@{Loc}",
+        };
 }

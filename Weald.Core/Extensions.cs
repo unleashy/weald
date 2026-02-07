@@ -11,7 +11,7 @@ internal static class StringExtensions
         public string Escape() =>
             self
                 .EnumerateRunes()
-                .Select(rune => rune == new Rune('"') ? "\\\"" : rune.Escape())
+                .Select(rune => rune == new Rune('"') ? "\\\"" : Rune.Escape(rune))
                 .JoinToString(separator: "", prefix: "\"", suffix: "\"");
 
         [Pure]
@@ -28,38 +28,40 @@ internal static class RuneExtensions
     extension(Rune self)
     {
         [Pure]
-        public static bool TryGetRuneAt(Source source, int index, out Rune rune) =>
-            Rune.TryGetRuneAt(source.Body, index, out rune);
-
-        [Pure]
         public static bool IsGraphical(Rune rune) =>
             Rune.GetUnicodeCategory(rune) switch {
                 UnicodeCategory.Control or
-                UnicodeCategory.Format or
-                UnicodeCategory.PrivateUse or
-                UnicodeCategory.Surrogate or
-                UnicodeCategory.OtherNotAssigned or
-                UnicodeCategory.LineSeparator or
-                UnicodeCategory.ParagraphSeparator => false,
-                _ => true
+                    UnicodeCategory.Format or
+                    UnicodeCategory.PrivateUse or
+                    UnicodeCategory.Surrogate or
+                    UnicodeCategory.OtherNotAssigned or
+                    UnicodeCategory.LineSeparator or
+                    UnicodeCategory.ParagraphSeparator => false,
+                _ => true,
             };
 
         [Pure]
-        public string Escape() =>
-            self.Value switch {
-                ' '  => " ",
-                '\n' => @"\n",
-                '\r' => @"\r",
-                '\t' => @"\t",
-                '\f' => @"\f",
-                '\b' => @"\b",
-                '\\' => @"\\",
-                '\'' => @"\'",
-                '\0' => @"\0",
-                _ when Rune.IsGraphical(self) => self.ToString(),
-                _ when self.IsBmp => $@"\u{self.Value:X4}",
-                _ => $@"\U{self.Value:X8}"
+        public static string Escape(Rune rune) =>
+            rune.Value switch {
+                ' '                           => " ",
+                '\n'                          => @"\n",
+                '\r'                          => @"\r",
+                '\t'                          => @"\t",
+                '\f'                          => @"\f",
+                '\b'                          => @"\b",
+                '\\'                          => @"\\",
+                '\''                          => @"\'",
+                '\0'                          => @"\0",
+                _ when Rune.IsGraphical(rune) => rune.ToString(),
+                _ when rune.IsBmp             => $@"\u{rune.Value:X4}",
+                _                             => $@"\U{rune.Value:X8}",
             };
+
+        [Pure]
+        public void Deconstruct(out int value)
+        {
+            value = self.Value;
+        }
     }
 }
 
@@ -88,7 +90,7 @@ internal static class DictionaryExtensions
     public static TValue GetValueElse<TKey, TValue>(
         this IDictionary<TKey, TValue> self,
         TKey key,
-        Func<TKey, TValue> func
+        [RequireStaticDelegate] Func<TKey, TValue> func
     ) =>
         self.TryGetValue(key, out var value) ? value : self[key] = func(key);
 }

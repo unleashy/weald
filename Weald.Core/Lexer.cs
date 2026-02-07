@@ -3,89 +3,210 @@ using System.Text;
 
 namespace Weald.Core;
 
-public static class Lexer
+public struct Lexer(Source source) : IEnumerable<Token>
 {
-    [Pure]
-    public static TokenEnumerator Tokenise(Source source) => new(source);
-
-    internal static Token NextToken(ref Cursor cursor)
+    private enum State : byte
     {
-        if (!cursor.MoveNext()) {
-            return Token.End(cursor.Loc);
+        Start,
+        Tokenising,
+        End,
+    }
+
+    private Cursor _cursor = new(source);
+    private State _state = State.Start;
+
+    public Token Next()
+    {
+        while (true) {
+            _cursor.Sync();
+
+            var result = _state switch {
+                State.Start      => NextStart(out _state),
+                State.Tokenising => NextTokenising(out _state),
+                State.End        => NextEnd(),
+            };
+
+            if (result is {} token) return token;
+        }
+    }
+
+    private Token? NextStart(out State state)
+    {
+        SkipBom();
+        SkipHashbang();
+        state = State.Tokenising;
+        return null;
+    }
+
+    private void SkipBom()
+    {
+        _ = _cursor.Match('\uFEFF');
+    }
+
+    private void SkipHashbang()
+    {
+        if (_cursor.Match("#!")) {
+            _cursor.NextUntil(RuneOps.IsNewline);
+        }
+    }
+
+    private readonly Token NextEnd()
+    {
+        return Token.End(_cursor.Loc);
+    }
+
+    private Token? NextTokenising(out State state)
+    {
+        if (_cursor.IsEmpty) {
+            state = State.End;
+            return null;
         }
 
-        switch (cursor.Current) {
-            
+        state = State.Tokenising;
+        var c = _cursor.Peek;
+        switch (c) {
+            case Rune(' ' or '\t' or '\u200E' or '\u200F'): return NextWhitespace();
+
+            case Rune('\n' or '\r'): return NextNewlineOrComment();
+
+            case Rune('-'): {
+                _cursor.Next();
+
+                return _cursor.Match('-')
+                    ? NextComment()
+                    : Token.Punctuation(TokenTag.PMinus, _cursor.Loc);
+            }
+
+            default: {
+                _cursor.Next();
+                return Token.Invalid($"unexpected character {Rune.Escape(c)}", _cursor.Loc);
+            }
+        }
+    }
+
+    private Token? NextWhitespace()
+    {
+        _cursor.NextWhile(RuneOps.IsWhitespace);
+        return null;
+    }
+
+    private Token? NextNewlineOrComment()
+    {
+        Debug.Assert(_cursor.IsEmpty || RuneOps.IsNewline(_cursor.Peek));
+
+        while (!_cursor.IsEmpty) {
+            _cursor.NextWhile(RuneOps.IsIgnorable);
+
+            if (_cursor.Match("--")) {
+                _cursor.NextUntil(RuneOps.IsNewline);
+                continue;
+            }
+
+            return Token.Newline(_cursor.Loc);
         }
 
-        return Token.Invalid(cursor.Current.ToString(), cursor.Loc);
+        return null;
     }
-}
 
-public struct TokenEnumerator : IEnumerator<Token>, IEnumerable<Token>
-{
-    private Cursor _cursor;
-    private Token _current = new();
-
-    internal TokenEnumerator(Source source)
+    private Token? NextComment()
     {
-        _cursor = new Cursor(source);
+        _cursor.NextUntil(RuneOps.IsNewline);
+        return NextNewlineOrComment();
     }
 
-    public readonly Token Current => _current;
+    #region Enumerable implementation
 
-    public bool MoveNext()
+    public IEnumerator<Token> GetEnumerator()
     {
-        if (_current.Tag == TokenTag.End) {
-            _current = new Token();
-            return false;
-        }
-
-        _cursor.Sync();
-        _current = Lexer.NextToken(ref _cursor);
-        return true;
+        Token token;
+        do {
+            token = Next();
+            yield return token;
+        } while (token.Tag != TokenTag.End);
     }
 
-    public void Reset()
-    {
-        _cursor.Reset();
-    }
-
-    #region Explicit implementations
-
-    readonly object IEnumerator.Current => Current;
-
-    readonly IEnumerator IEnumerable.GetEnumerator() => this;
-
-    readonly IEnumerator<Token> IEnumerable<Token>.GetEnumerator() => this;
-
-    readonly void IDisposable.Dispose() {}
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     #endregion
 }
 
-internal struct Cursor(Source source) : IEnumerator<Rune>, IEnumerable<Rune>
+internal struct Cursor
 {
-    private Rune _current = default;
+    private readonly Source _source;
     private int _start = 0;
     private int _now = 0;
 
-    public readonly Rune Current => _current;
-
-    public bool MoveNext()
+    public Cursor(Source source)
     {
-        if (_now >= source.Length)
-        {
-            _current = default;
+        _source = source;
+    }
+
+    public readonly bool IsEmpty => _now >= _source.Length;
+
+    public readonly Rune Peek {
+        get {
+            Debug.Assert(!IsEmpty, "cannot peek past the end");
+            return Rune.TryGetRuneAt(_source.Body, _now, out var c) ? c : Rune.ReplacementChar;
+        }
+    }
+
+    [Pure]
+    public readonly Rune? PeekNext()
+    {
+        var next = _now + Peek.Utf16SequenceLength;
+        if (next >= _source.Length) return null;
+
+        if (Rune.TryGetRuneAt(_source.Body, next, out var c)) {
+            return c;
+        }
+        else {
+            return null;
+        }
+    }
+
+    public void Next()
+    {
+        Debug.Assert(!IsEmpty, "cannot advance past the end");
+        _now += Peek.Utf16SequenceLength;
+    }
+
+    public void NextWhile([RequireStaticDelegate] Predicate<Rune> predicate)
+    {
+        while (!IsEmpty && predicate(Peek)) {
+            Next();
+        }
+    }
+
+    public void NextUntil([RequireStaticDelegate] Predicate<Rune> predicate)
+    {
+        while (!IsEmpty && !predicate(Peek)) {
+            Next();
+        }
+    }
+
+    [MustUseReturnValue]
+    public bool Match(char expected)
+    {
+        if (!IsEmpty && Peek.Value == expected) {
+            Next();
+            return true;
+        }
+        else {
             return false;
         }
+    }
 
-        if (!Rune.TryGetRuneAt(source, _now, out _current)) {
-            _current = Rune.ReplacementChar;
+    [MustUseReturnValue]
+    public bool Match(string expected)
+    {
+        var end = _now + expected.Length;
+        if (end <= _source.Length && _source[_now .. end].SequenceEqual(expected)) {
+            _now += expected.Length;
+            return true;
         }
-
-        _now += _current.Utf16SequenceLength;
-        return true;
+        else {
+            return false;
+        }
     }
 
     public void Sync()
@@ -93,23 +214,5 @@ internal struct Cursor(Source source) : IEnumerator<Rune>, IEnumerable<Rune>
         _start = _now;
     }
 
-    public void Reset()
-    {
-        _start = 0;
-        _now = 0;
-    }
-
     public readonly Loc Loc => Loc.FromRange(_start, _now);
-
-    #region Explicit implementations
-
-    readonly object IEnumerator.Current => _current;
-
-    readonly IEnumerator IEnumerable.GetEnumerator() => this;
-
-    readonly IEnumerator<Rune> IEnumerable<Rune>.GetEnumerator() => this;
-
-    readonly void IDisposable.Dispose() {}
-
-    #endregion
 }

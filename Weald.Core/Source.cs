@@ -3,10 +3,10 @@ using System.Text;
 
 namespace Weald.Core;
 
-public sealed class Source : IEnumerable<char>
+public readonly struct Source : IEnumerable<char>
 {
-    public string Name { get; }
-    public string Body { get; }
+    public string Name { get; } = "";
+    public string Body { get; } = "";
 
     [Pure]
     public static Source FromString(string name, string body)
@@ -27,6 +27,7 @@ public sealed class Source : IEnumerable<char>
     }
 
     public char this[int index] => Body[index];
+    public ReadOnlySpan<char> this[Range range] => Body[range];
 
     public int Length => Body.Length;
 

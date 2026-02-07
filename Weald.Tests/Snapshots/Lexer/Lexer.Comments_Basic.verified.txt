@@ -1,0 +1,2 @@
+﻿Token.Newline@0:10
+Token.End@10:0

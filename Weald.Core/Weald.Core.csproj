@@ -1,6 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
+        <NoWarn>CS8524</NoWarn>
+        <WarningsAsErrors>CS8509</WarningsAsErrors>
     </PropertyGroup>
 
     <ItemGroup>
