@@ -2,6 +2,8 @@
 
 A new programming language (pronounced /wiːld/)
 
+**[Formatted Spec](https://emmanuelle.dev/weald/)**
+
 ## Development
 
 Weald uses the [dotnet CLI](https://learn.microsoft.com/en-us/dotnet/core/tools/) for development.

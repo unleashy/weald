@@ -1,7 +1,7 @@
 import { Renderer } from "./lib/renderer.ts";
 import spec from "./spec.yaml";
 
-const OUTPUT_PATH = `${import.meta.dirname}/spec.html`;
+export const SPEC_HTML_FILE = `${import.meta.dirname}/spec.html`;
 
 // language=html
 const SHELL = `
@@ -42,4 +42,4 @@ let output = new Renderer().render(spec, SHELL, (output, toc, meta) => ({
   output,
   toc,
 }));
-await Bun.write(OUTPUT_PATH, output);
+await Bun.write(SPEC_HTML_FILE, output);
