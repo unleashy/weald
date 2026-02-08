@@ -19,5 +19,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Weald.Core\Weald.Core.csproj"/>
+        <ProjectReference Include="..\Weald.UnicodeTables\Weald.UnicodeTables.csproj" />
     </ItemGroup>
 </Project>

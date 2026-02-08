@@ -8,4 +8,8 @@
     <ItemGroup>
         <PackageReference Include="JetBrains.Annotations" Version="2025.2.4" PrivateAssets="all" />
     </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Weald.UnicodeTables\Weald.UnicodeTables.csproj" />
+    </ItemGroup>
 </Project>
