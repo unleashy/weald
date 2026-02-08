@@ -10,11 +10,12 @@ public enum TokenTag : byte
     Float,
     String,
 
-    // Keywords
+    #region Keywords
     KwTrue,
     KwFalse,
+    #endregion
 
-    // Punctuation
+    #region Punctuation
     PParenOpen,
     PParenClose,
     PBracketOpen,
@@ -42,6 +43,7 @@ public enum TokenTag : byte
     PBangEqual,
     PGreaterEqual,
     PGreater,
+    #endregion
 }
 
 public readonly record struct Token(TokenTag Tag, string? Text, Loc Loc)
