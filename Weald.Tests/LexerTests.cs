@@ -1,4 +1,6 @@
-﻿using Weald.Core;
+﻿using CsCheck;
+using Weald.Core;
+using Weald.Extensions;
 
 namespace Weald.Tests;
 
@@ -20,14 +22,39 @@ public class LexerTests
         return Verifier.Verify(string.Join('\n', lexer), Settings);
     }
 
-    [Test]
-    public Task Empty() => Verify("");
+    private static void AssertLex(string body, string token, params string[] rest)
+    {
+        var lexer = new Lexer(Source.FromString("", body));
+        Assert.That(
+            lexer.Select(t => t.ToString()),
+            Is.EquivalentTo([token, ..rest]),
+            actualExpression: body.Escape()
+        );
+    }
 
     [Test]
-    public Task OnlyWhitespace() => Verify(" \t\u200E  \u200F\t ");
+    public void Empty()
+    {
+        AssertLex("", "Token.End@0:0");
+    }
 
     [Test]
-    public Task Newlines() => Verify("\n \r\n \r  \n\r");
+    public void OnlyWhitespace()
+    {
+        Gen.String[" \t\u200E\u200F"].Sample(sut => {
+            AssertLex(sut, $"Token.End@{sut.Length}:0");
+        });
+    }
+
+    [Test]
+    public void Newlines()
+    {
+        Gen.String[" \n\r"]
+            .Where(s => s.Any(c => c is '\n' or '\r'))
+            .Sample(sut => {
+                AssertLex(sut, $"Token.Newline@0:{sut.Length}", $"Token.End@{sut.Length}:0");
+            });
+    }
 
     [TestCase("EmptyEnd", "--")]
     [TestCase("EmptyNl", "--\n")]
@@ -36,6 +63,17 @@ public class LexerTests
     [TestCase("MultipleNls", "\n -- \r --")]
     [TestCase("Dashes", "-------------------")]
     public Task Comments(string name, string text) => Verify(text).UseTextForParameters(name);
+
+    [Test]
+    public void GenComments()
+    {
+        Gen.String
+            .Where(s => !s.Any(c => c is '\n' or '\r'))
+            .Select(s => $"--${s}\n")
+            .Sample(sut => {
+                AssertLex(sut, $"Token.Newline@0:{sut.Length}", $"Token.End@{sut.Length}:0");
+            });
+    }
 
     [Test]
     public Task Bom() => Verify("\uFEFF");

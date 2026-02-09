@@ -17,12 +17,12 @@ public struct Lexer(Source source) : IEnumerable<Token>
 
     public Token Next()
     {
-        while (true) {
-            _cursor.Sync();
+        var startMark = _cursor.NewMark();
 
+        while (true) {
             var result = _state switch {
                 State.Start      => NextStart(out _state),
-                State.Tokenising => NextTokenising(out _state),
+                State.Tokenising => NextTokenising(startMark, out _state),
                 State.End        => NextEnd(),
             };
 
@@ -52,10 +52,10 @@ public struct Lexer(Source source) : IEnumerable<Token>
 
     private readonly Token NextEnd()
     {
-        return Token.End(_cursor.Loc);
+        return Token.End(_cursor.Locate());
     }
 
-    private Token? NextTokenising(out State state)
+    private Token? NextTokenising(Cursor.Mark startMark, out State state)
     {
         if (_cursor.IsEmpty) {
             state = State.End;
@@ -69,17 +69,20 @@ public struct Lexer(Source source) : IEnumerable<Token>
             return NextWhitespace();
         }
         else if (RuneOps.IsNewline(c)) {
-            return NextNewlineOrComment();
+            return NextNewlineOrComment(startMark);
         }
         else if (_cursor.Match("--")) {
-            return NextComment();
+            return NextComment(startMark);
         }
-        else if (RuneOps.IsPunctuation(c)) {
-            return NextPunctuation();
+
+        var tokenMark = _cursor.NewMark();
+
+        if (RuneOps.IsPunctuation(c)) {
+            return NextPunctuation(tokenMark);
         }
 
         _cursor.Next();
-        return Token.Invalid($"unexpected character {Rune.Escape(c)}", _cursor.Loc);
+        return Token.Invalid($"unexpected character {Rune.Escape(c)}", _cursor.Locate(tokenMark));
     }
 
     private Token? NextWhitespace()
@@ -88,7 +91,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
         return null;
     }
 
-    private Token? NextNewlineOrComment()
+    private Token? NextNewlineOrComment(Cursor.Mark startMark)
     {
         Debug.Assert(_cursor.IsEmpty || RuneOps.IsNewline(_cursor.Peek));
 
@@ -100,19 +103,19 @@ public struct Lexer(Source source) : IEnumerable<Token>
                 continue;
             }
 
-            return Token.Newline(_cursor.Loc);
+            return Token.Newline(_cursor.Locate(startMark));
         }
 
         return null;
     }
 
-    private Token? NextComment()
+    private Token? NextComment(Cursor.Mark startMark)
     {
         _cursor.NextUntil(RuneOps.IsNewline);
-        return NextNewlineOrComment();
+        return NextNewlineOrComment(startMark);
     }
 
-    private Token NextPunctuation()
+    private Token NextPunctuation(Cursor.Mark tokenMark)
     {
         var c = _cursor.Peek;
         _cursor.Next();
@@ -156,9 +159,11 @@ public struct Lexer(Source source) : IEnumerable<Token>
             _ => null,
         };
 
+        var loc = _cursor.Locate(tokenMark);
+
         return tag is {} it
-            ? Token.Punctuation(it, _cursor.Loc)
-            : Token.Invalid("invalid punctuation", _cursor.Loc);
+            ? Token.Punctuation(it, loc)
+            : Token.Invalid("invalid punctuation", loc);
     }
 
     #region Enumerable implementation
@@ -180,27 +185,26 @@ public struct Lexer(Source source) : IEnumerable<Token>
 internal struct Cursor
 {
     private readonly Source _source;
-    private int _start = 0;
-    private int _now = 0;
+    private int _index = 0;
 
     public Cursor(Source source)
     {
         _source = source;
     }
 
-    public readonly bool IsEmpty => _now >= _source.Length;
+    public readonly bool IsEmpty => _index >= _source.Length;
 
     public readonly Rune Peek {
         get {
             Debug.Assert(!IsEmpty, "cannot peek past the end");
-            return Rune.TryGetRuneAt(_source.Body, _now, out var c) ? c : Rune.ReplacementChar;
+            return Rune.TryGetRuneAt(_source.Body, _index, out var c) ? c : Rune.ReplacementChar;
         }
     }
 
     [Pure]
     public readonly Rune? PeekNext()
     {
-        var next = _now + Peek.Utf16SequenceLength;
+        var next = _index + Peek.Utf16SequenceLength;
         if (next >= _source.Length) return null;
 
         if (Rune.TryGetRuneAt(_source.Body, next, out var c)) {
@@ -214,7 +218,7 @@ internal struct Cursor
     public void Next()
     {
         Debug.Assert(!IsEmpty, "cannot advance past the end");
-        _now += Peek.Utf16SequenceLength;
+        _index += Peek.Utf16SequenceLength;
     }
 
     public void NextWhile([RequireStaticDelegate] Predicate<Rune> predicate)
@@ -246,9 +250,9 @@ internal struct Cursor
     [MustUseReturnValue]
     public bool Match(string expected)
     {
-        var end = _now + expected.Length;
-        if (end <= _source.Length && _source[_now .. end].SequenceEqual(expected)) {
-            _now += expected.Length;
+        var end = _index + expected.Length;
+        if (end <= _source.Length && _source[_index .. end].SequenceEqual(expected)) {
+            _index += expected.Length;
             return true;
         }
         else {
@@ -256,10 +260,14 @@ internal struct Cursor
         }
     }
 
-    public void Sync()
+    public Mark NewMark()
     {
-        _start = _now;
+        return new Mark(_index);
     }
 
-    public readonly Loc Loc => Loc.FromRange(_start, _now);
+    public readonly record struct Mark(int Position);
+
+    public readonly Loc Locate() => Loc.FromLength(_index, 0);
+
+    public readonly Loc Locate(Mark mark) => Loc.FromRange(mark.Position, _index);
 }
