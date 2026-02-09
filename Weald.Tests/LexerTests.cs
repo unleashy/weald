@@ -1,10 +1,12 @@
-﻿using CsCheck;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Text;
+using CsCheck;
 using Weald.Core;
 using Weald.Extensions;
 
 namespace Weald.Tests;
 
-public class LexerTests
+public class LexerTests : BaseTest
 {
     private static readonly VerifySettings Settings = new();
 
@@ -91,4 +93,8 @@ public class LexerTests
 
     [Test]
     public Task InvalidPunctuation() => Verify(@"#");
+
+    [TestCase("AsciiControl", "\0\x1\x2\x3\x4\x5\x6\x7\x8\xB\xC\xE\xF\x7F\x1A")]
+    public Task ForbiddenChars(string name, string text) =>
+        Verify(text).UseTextForParameters(name);
 }

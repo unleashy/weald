@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Globalization;
 using System.Text;
 
 namespace Weald.Core;
@@ -21,8 +22,8 @@ public struct Lexer(Source source) : IEnumerable<Token>
 
         while (true) {
             var result = _state switch {
-                State.Start      => NextStart(out _state),
-                State.Tokenising => NextTokenising(startMark, out _state),
+                State.Start      => NextStart(),
+                State.Tokenising => NextTokenising(startMark),
                 State.End        => NextEnd(),
             };
 
@@ -30,11 +31,11 @@ public struct Lexer(Source source) : IEnumerable<Token>
         }
     }
 
-    private Token? NextStart(out State state)
+    private Token? NextStart()
     {
         SkipBom();
         SkipHashbang();
-        state = State.Tokenising;
+        _state = State.Tokenising;
         return null;
     }
 
@@ -55,34 +56,21 @@ public struct Lexer(Source source) : IEnumerable<Token>
         return Token.End(_cursor.Locate());
     }
 
-    private Token? NextTokenising(Cursor.Mark startMark, out State state)
+    private Token? NextTokenising(Cursor.Mark startMark)
     {
         if (_cursor.IsEmpty) {
-            state = State.End;
+            _state = State.End;
             return null;
         }
 
-        state = State.Tokenising;
-        var c = _cursor.Peek;
+        if (_cursor.Match("--")) return NextComment(startMark);
 
-        if (RuneOps.IsWhitespace(c)) {
-            return NextWhitespace();
-        }
-        else if (RuneOps.IsNewline(c)) {
-            return NextNewlineOrComment(startMark);
-        }
-        else if (_cursor.Match("--")) {
-            return NextComment(startMark);
-        }
-
-        var tokenMark = _cursor.NewMark();
-
-        if (RuneOps.IsPunctuation(c)) {
-            return NextPunctuation(tokenMark);
-        }
-
-        _cursor.Next();
-        return Token.Invalid($"unexpected character {Rune.Escape(c)}", _cursor.Locate(tokenMark));
+        return _cursor.Peek switch {
+            var c when RuneOps.IsWhitespace(c) => NextWhitespace(),
+            var c when RuneOps.IsNewline(c) => NextNewlineOrComment(startMark),
+            var c when RuneOps.IsPunctuation(c) => NextPunctuation(),
+            _ => NextInvalid(),
+        };
     }
 
     private Token? NextWhitespace()
@@ -115,8 +103,9 @@ public struct Lexer(Source source) : IEnumerable<Token>
         return NextNewlineOrComment(startMark);
     }
 
-    private Token NextPunctuation(Cursor.Mark tokenMark)
+    private Token NextPunctuation()
     {
+        var mark = _cursor.NewMark();
         var c = _cursor.Peek;
         _cursor.Next();
 
@@ -159,11 +148,37 @@ public struct Lexer(Source source) : IEnumerable<Token>
             _ => null,
         };
 
-        var loc = _cursor.Locate(tokenMark);
+        var loc = _cursor.Locate(mark);
 
         return tag is {} it
             ? Token.Punctuation(it, loc)
             : Token.Invalid("invalid punctuation", loc);
+    }
+
+    private Token NextInvalid()
+    {
+        var mark = _cursor.NewMark();
+        var c = _cursor.Peek;
+        _cursor.Next();
+
+        var message = (c, Rune.GetUnicodeCategory(c)) switch {
+            (Rune('\u0085' or '\u2028' or '\u2029'), _) =>
+                $"unexpected newline character {Rune.Escape(c)}; " +
+                @"only LF \n, CRLF \r\n, or CR \r are allowed",
+
+            (Rune('\f' or '\v'), _) or (_, UnicodeCategory.SpaceSeparator) =>
+                $"unexpected whitespace character {Rune.Escape(c)}; only space and tab are allowed",
+
+            (_, UnicodeCategory.Control) =>
+                $"unexpected control character {Rune.Escape(c)}",
+
+            (_, UnicodeCategory.Surrogate) =>
+                $"unexpected unpaired surrogate {Rune.Escape(c)}",
+
+            _ => $"unexpected character {Rune.Escape(c)}",
+        };
+
+        return Token.Invalid(message, _cursor.Locate(mark));
     }
 
     #region Enumerable implementation
@@ -184,6 +199,8 @@ public struct Lexer(Source source) : IEnumerable<Token>
 
 internal struct Cursor
 {
+    public readonly record struct Mark(int Position);
+
     private readonly Source _source;
     private int _index = 0;
 
@@ -260,14 +277,15 @@ internal struct Cursor
         }
     }
 
-    public Mark NewMark()
+    [Pure]
+    public readonly Mark NewMark()
     {
         return new Mark(_index);
     }
 
-    public readonly record struct Mark(int Position);
-
+    [Pure]
     public readonly Loc Locate() => Loc.FromLength(_index, 0);
 
+    [Pure]
     public readonly Loc Locate(Mark mark) => Loc.FromRange(mark.Position, _index);
 }
