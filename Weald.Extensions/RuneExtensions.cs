@@ -1,29 +1,10 @@
 ﻿using System.Globalization;
 using System.Text;
+using JetBrains.Annotations;
 
-namespace Weald.Core;
+namespace Weald.Extensions;
 
-internal static class StringExtensions
-{
-    extension(string self)
-    {
-        [Pure]
-        public string Escape() =>
-            self
-                .EnumerateRunes()
-                .Select(rune => rune == new Rune('"') ? "\\\"" : Rune.Escape(rune))
-                .JoinToString(separator: "", prefix: "\"", suffix: "\"");
-
-        [Pure]
-        public int LengthInGraphemeClusters()
-        {
-            var si = new StringInfo(self);
-            return si.LengthInTextElements;
-        }
-    }
-}
-
-internal static class RuneExtensions
+public static class RuneExtensions
 {
     extension(Rune self)
     {
@@ -63,34 +44,4 @@ internal static class RuneExtensions
             value = self.Value;
         }
     }
-}
-
-internal static class EnumerableExtensions
-{
-    [Pure]
-    public static string JoinToString<T>(
-        this IEnumerable<T> self,
-        string separator,
-        string prefix,
-        string suffix
-    )
-    {
-        var sb = new StringBuilder(prefix.Length + suffix.Length);
-
-        sb.Append(prefix);
-        sb.AppendJoin(separator, self);
-        sb.Append(suffix);
-
-        return sb.ToString();
-    }
-}
-
-internal static class DictionaryExtensions
-{
-    public static TValue GetValueElse<TKey, TValue>(
-        this IDictionary<TKey, TValue> self,
-        TKey key,
-        [RequireStaticDelegate] Func<TKey, TValue> func
-    ) =>
-        self.TryGetValue(key, out var value) ? value : self[key] = func(key);
 }
