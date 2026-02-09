@@ -4,6 +4,7 @@ namespace Weald.Extensions;
 
 public static class DictionaryExtensions
 {
+    [MustUseReturnValue]
     public static TValue GetValueElse<TKey, TValue>(
         this IDictionary<TKey, TValue> self,
         TKey key,

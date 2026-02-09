@@ -5,6 +5,8 @@ public readonly record struct Loc
     [NonNegativeValue] public int Start { get; } = 0;
     [NonNegativeValue] public int Length { get; } = 0;
 
+    [Pure]
+    [MustUseReturnValue]
     public static Loc FromLength(int start, int length)
     {
         Debug.Assert(0 <= start, "start must be non-negative");
@@ -14,6 +16,8 @@ public readonly record struct Loc
         return new Loc(start, length);
     }
 
+    [Pure]
+    [MustUseReturnValue]
     public static Loc FromRange(int start, int end)
     {
         Debug.Assert(0 <= start, "start must be non-negative");
@@ -29,6 +33,4 @@ public readonly record struct Loc
     }
 
     public override string ToString() => $"{Start}:{Length}";
-
-    [NonNegativeValue] public int End => Start + Length;
 }

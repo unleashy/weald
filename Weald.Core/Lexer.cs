@@ -47,7 +47,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
     private void SkipHashbang()
     {
         if (_cursor.Match("#!")) {
-            _cursor.NextUntil(RuneOps.IsNewline);
+            _ = _cursor.NextUntil(RuneOps.IsNewline);
         }
     }
 
@@ -66,6 +66,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
         if (_cursor.Match("--")) return NextComment(startMark);
 
         return _cursor.Peek switch {
+            var c when RuneOps.IsNameStart(c) => NextName(),
             var c when RuneOps.IsWhitespace(c) => NextWhitespace(),
             var c when RuneOps.IsNewline(c) => NextNewlineOrComment(startMark),
             var c when RuneOps.IsPunctuation(c) => NextPunctuation(),
@@ -73,9 +74,35 @@ public struct Lexer(Source source) : IEnumerable<Token>
         };
     }
 
+    private Token NextName()
+    {
+        var mark = _cursor.NewMark();
+        var hasName = _cursor.NextWhile(RuneOps.IsNameContinue);
+        Debug.Assert(hasName);
+
+        var validHyphens = true;
+        while (_cursor.Match('-')) {
+            if (!_cursor.NextWhile(RuneOps.IsNameContinue)) {
+                validHyphens = false;
+            }
+        }
+
+        var loc = _cursor.Locate(mark);
+        var value = _cursor.Text(mark);
+
+        if (!validHyphens) {
+            return Token.Invalid(
+                "invalid hyphen placement in name; hyphens must be followed by a name character",
+                loc
+            );
+        }
+
+        return Token.Name(value, loc);
+    }
+
     private Token? NextWhitespace()
     {
-        _cursor.NextWhile(RuneOps.IsWhitespace);
+        _ = _cursor.NextWhile(RuneOps.IsWhitespace);
         return null;
     }
 
@@ -84,10 +111,10 @@ public struct Lexer(Source source) : IEnumerable<Token>
         Debug.Assert(_cursor.IsEmpty || RuneOps.IsNewline(_cursor.Peek));
 
         while (!_cursor.IsEmpty) {
-            _cursor.NextWhile(RuneOps.IsIgnorable);
+            _ = _cursor.NextWhile(RuneOps.IsIgnorable);
 
             if (_cursor.Match("--")) {
-                _cursor.NextUntil(RuneOps.IsNewline);
+                _ = _cursor.NextUntil(RuneOps.IsNewline);
                 continue;
             }
 
@@ -99,7 +126,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
 
     private Token? NextComment(Cursor.Mark startMark)
     {
-        _cursor.NextUntil(RuneOps.IsNewline);
+        _ = _cursor.NextUntil(RuneOps.IsNewline);
         return NextNewlineOrComment(startMark);
     }
 
@@ -197,24 +224,18 @@ public struct Lexer(Source source) : IEnumerable<Token>
     #endregion
 }
 
-internal struct Cursor
+internal struct Cursor(Source source)
 {
     public readonly record struct Mark(int Position);
 
-    private readonly Source _source;
     private int _index = 0;
 
-    public Cursor(Source source)
-    {
-        _source = source;
-    }
-
-    public readonly bool IsEmpty => _index >= _source.Length;
+    public readonly bool IsEmpty => _index >= source.Length;
 
     public readonly Rune Peek {
         get {
             Debug.Assert(!IsEmpty, "cannot peek past the end");
-            return Rune.TryGetRuneAt(_source.Body, _index, out var c) ? c : Rune.ReplacementChar;
+            return Rune.TryGetRuneAt(source.Body, _index, out var c) ? c : Rune.ReplacementChar;
         }
     }
 
@@ -222,9 +243,9 @@ internal struct Cursor
     public readonly Rune? PeekNext()
     {
         var next = _index + Peek.Utf16SequenceLength;
-        if (next >= _source.Length) return null;
+        if (next >= source.Length) return null;
 
-        if (Rune.TryGetRuneAt(_source.Body, next, out var c)) {
+        if (Rune.TryGetRuneAt(source.Body, next, out var c)) {
             return c;
         }
         else {
@@ -238,16 +259,26 @@ internal struct Cursor
         _index += Peek.Utf16SequenceLength;
     }
 
-    public void NextWhile([RequireStaticDelegate] Predicate<Rune> predicate)
+    [MustUseReturnValue]
+    public bool NextWhile([RequireStaticDelegate] Predicate<Rune> predicate)
     {
+        var accepted = false;
+
         while (!IsEmpty && predicate(Peek)) {
             Next();
+            accepted = true;
         }
+
+        return accepted;
     }
 
-    public void NextUntil([RequireStaticDelegate] Predicate<Rune> predicate)
+    [MustUseReturnValue]
+    public bool NextUntil([RequireStaticDelegate] Predicate<Rune> predicate)
     {
-        while (!IsEmpty && !predicate(Peek)) {
+        while (true) {
+            if (IsEmpty) return false;
+            if (predicate(Peek)) return true;
+
             Next();
         }
     }
@@ -268,7 +299,7 @@ internal struct Cursor
     public bool Match(string expected)
     {
         var end = _index + expected.Length;
-        if (end <= _source.Length && _source[_index .. end].SequenceEqual(expected)) {
+        if (end <= source.Length && source[_index .. end].SequenceEqual(expected)) {
             _index += expected.Length;
             return true;
         }
@@ -288,4 +319,7 @@ internal struct Cursor
 
     [Pure]
     public readonly Loc Locate(Mark mark) => Loc.FromRange(mark.Position, _index);
+
+    [Pure]
+    public readonly string Text(Mark mark) => source.Body[mark.Position .. _index];
 }

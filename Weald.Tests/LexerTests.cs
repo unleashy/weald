@@ -1,11 +1,11 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using CsCheck;
 using Weald.Core;
 using Weald.Extensions;
 
 namespace Weald.Tests;
 
+[SuppressMessage("ReSharper", "InvokeAsExtensionMember")]
 public class LexerTests : BaseTest
 {
     private static readonly VerifySettings Settings = new();
@@ -97,4 +97,42 @@ public class LexerTests : BaseTest
     [TestCase("AsciiControl", "\0\x1\x2\x3\x4\x5\x6\x7\x8\xB\xC\xE\xF\x7F\x1A")]
     public Task ForbiddenChars(string name, string text) =>
         Verify(text).UseTextForParameters(name);
+
+    private static readonly Gen<char> NameStartAscii =
+        Gen.Char["abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_"];
+
+    private static readonly Gen<char> NameContinueAscii =
+        Gen.Char["0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_"];
+
+    [Test]
+    public void NamesAscii()
+    {
+        Gen.Select(NameStartAscii, Gen.String[NameContinueAscii])
+            .Select((s, c) => s + c)
+            .Sample(sut => {
+                AssertLex(sut,
+                    $"Token.Name={sut.Escape()}@0:{sut.Length}",
+                    $"Token.End@{sut.Length}:0"
+                );
+            });
+    }
+
+    [Test]
+    public void NamesAsciiHyphenated()
+    {
+        Gen.Select(NameStartAscii, Gen.String[NameContinueAscii, 1, 100])
+            .Select((s, c) => s + "-" + c)
+            .Sample(sut => {
+                AssertLex(sut,
+                    $"Token.Name={sut.Escape()}@0:{sut.Length}",
+                    $"Token.End@{sut.Length}:0"
+                );
+            });
+    }
+
+    [Test]
+    public Task NamesBadHyphenation() => Verify("abc- _-123- x-- _--_ ");
+
+    [Test]
+    public Task NamesUnicode() => Verify("おやすみなさい a山b 本-ℹ देवनागरी");
 }

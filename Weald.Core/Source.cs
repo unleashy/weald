@@ -14,6 +14,7 @@ public readonly struct Source : IEnumerable<char>
         return new Source(name, body);
     }
 
+    [MustUseReturnValue]
     public static Source FromFile(string path)
     {
         var body = File.ReadAllText(path, Encoding.UTF8);

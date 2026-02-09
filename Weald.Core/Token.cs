@@ -56,6 +56,8 @@ public readonly record struct Token(TokenTag Tag, string? Text, Loc Loc)
 
     public static Token Punctuation(TokenTag tag, Loc loc) => new(tag, null, loc);
 
+    public static Token Name(string value, Loc loc) => new(TokenTag.Name, value, loc);
+
     public override string ToString() =>
         Text switch {
             {} text => $"Token.{Tag}={text.Escape()}@{Loc}",
