@@ -88,7 +88,6 @@ public struct Lexer(Source source) : IEnumerable<Token>
         }
 
         var loc = _cursor.Locate(mark);
-        var value = _cursor.Text(mark);
 
         if (!validHyphens) {
             return Token.Invalid(
@@ -97,7 +96,10 @@ public struct Lexer(Source source) : IEnumerable<Token>
             );
         }
 
-        return Token.Name(value, loc);
+        var value = _cursor.Text(mark);
+        return TokenTag.GetKeyword(value) is {} kw
+            ? Token.Keyword(kw, loc)
+            : Token.Name(value, loc);
     }
 
     private Token? NextWhitespace()

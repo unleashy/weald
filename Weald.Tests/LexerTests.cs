@@ -135,4 +135,7 @@ public class LexerTests : BaseTest
 
     [Test]
     public Task NamesUnicode() => Verify("おやすみなさい a山b 本-ℹ देवनागरी");
+
+    [Test]
+    public Task Keywords() => Verify("_ false true");
 }

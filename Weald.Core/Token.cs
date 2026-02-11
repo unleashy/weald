@@ -11,11 +11,15 @@ public enum TokenTag : byte
     String,
 
     #region Keywords
-    KwTrue,
+
+    KwDiscard,
     KwFalse,
+    KwTrue,
+
     #endregion
 
     #region Punctuation
+
     PParenOpen,
     PParenClose,
     PBracketOpen,
@@ -43,6 +47,7 @@ public enum TokenTag : byte
     PBangEqual,
     PGreaterEqual,
     PGreater,
+
     #endregion
 }
 
@@ -54,13 +59,43 @@ public readonly record struct Token(TokenTag Tag, string? Text, Loc Loc)
 
     public static Token Newline(Loc loc) => new(TokenTag.Newline, null, loc);
 
-    public static Token Punctuation(TokenTag tag, Loc loc) => new(tag, null, loc);
-
     public static Token Name(string value, Loc loc) => new(TokenTag.Name, value, loc);
+
+    public static Token Punctuation(TokenTag tag, Loc loc)
+    {
+        Debug.Assert(TokenTag.IsPunctuation(tag));
+        return new Token(tag, null, loc);
+    }
+
+    public static Token Keyword(TokenTag tag, Loc loc)
+    {
+        Debug.Assert(TokenTag.IsKeyword(tag));
+        return new Token(tag, null, loc);
+    }
 
     public override string ToString() =>
         Text switch {
             {} text => $"Token.{Tag}={text.Escape()}@{Loc}",
             _       => $"Token.{Tag}@{Loc}",
         };
+}
+
+public static class TokenTagExtensions
+{
+    extension(TokenTag)
+    {
+        public static bool IsPunctuation(TokenTag tag) =>
+            typeof(TokenTag).GetEnumName(tag)!.StartsWith('P');
+
+        public static bool IsKeyword(TokenTag tag) =>
+            typeof(TokenTag).GetEnumName(tag)!.StartsWith("Kw");
+
+        public static TokenTag? GetKeyword(string term) =>
+            term switch {
+                "_" => TokenTag.KwDiscard,
+                "false" => TokenTag.KwFalse,
+                "true" => TokenTag.KwTrue,
+                _ => null,
+            };
+    }
 }
