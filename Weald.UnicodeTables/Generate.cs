@@ -327,10 +327,10 @@ internal readonly record struct UcdField(int Start, int End, string Property)
         var range = fields[0].Split("..", opts);
         Debug.Assert(range.Length is 1 or 2);
 
-        var start = int.Parse(range[0], NumberStyles.HexNumber);
+        var start = int.Parse(range[0], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
         var end =
             range.Length == 2
-                ? int.Parse(range[1], NumberStyles.HexNumber)
+                ? int.Parse(range[1], NumberStyles.HexNumber, CultureInfo.InvariantCulture)
                 : start;
 
         Debug.Assert(start <= end);

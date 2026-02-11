@@ -96,7 +96,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
             );
         }
 
-        var value = _cursor.Text(mark);
+        var value = _cursor.Text(mark).Normalize(NormalizationForm.FormC);
         return TokenTag.GetKeyword(value) is {} kw
             ? Token.Keyword(kw, loc)
             : Token.Name(value, loc);

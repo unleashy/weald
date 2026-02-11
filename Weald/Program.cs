@@ -42,11 +42,14 @@ static void Repl(Action<string> action)
 static bool HandleCommand(string command)
 {
     if (!string.IsNullOrWhiteSpace(command)) {
-        if ("exit".StartsWith(command) || "quit".StartsWith(command)) {
+        if (
+            "exit".StartsWith(command, StringComparison.Ordinal) ||
+            "quit".StartsWith(command, StringComparison.Ordinal)
+        ) {
             return false;
         }
 
-        if ("help".StartsWith(command)) {
+        if ("help".StartsWith(command, StringComparison.Ordinal)) {
             Console.WriteLine("Available commands:");
             Console.WriteLine("  .exit   Quit the interactive environment (alias .quit)");
             Console.WriteLine("  .help   Display this help text");

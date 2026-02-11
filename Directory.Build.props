@@ -11,6 +11,5 @@
         <SuppressTrimAnalysisWarnings>false</SuppressTrimAnalysisWarnings>
 
         <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
-        <InvariantGlobalization>true</InvariantGlobalization>
     </PropertyGroup>
 </Project>

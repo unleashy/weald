@@ -92,7 +92,7 @@ public class LexerTests : BaseTest
         Verify(@"( ) [ ] { } * \ && % ^ | || + - , : . / < <= = == ! != >= >");
 
     [Test]
-    public Task InvalidPunctuation() => Verify(@"#");
+    public Task InvalidPunctuation() => Verify("#");
 
     [TestCase("AsciiControl", "\0\x1\x2\x3\x4\x5\x6\x7\x8\xB\xC\xE\xF\x7F\x1A")]
     public Task ForbiddenChars(string name, string text) =>
@@ -138,4 +138,15 @@ public class LexerTests : BaseTest
 
     [Test]
     public Task Keywords() => Verify("_ false true");
+
+    [Test]
+    public void NamesAreNormalised()
+    {
+        const string sut = "noe\u0308l-\u212b";
+        var lexer = new Lexer(Source.FromString("", sut));
+
+        var actual = lexer.Next();
+
+        Assert.That(actual, Is.EqualTo(Token.Name("noël-Å", Loc.FromLength(0, sut.Length))));
+    }
 }

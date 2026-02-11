@@ -88,7 +88,7 @@ public static class TokenTagExtensions
             typeof(TokenTag).GetEnumName(tag)!.StartsWith('P');
 
         public static bool IsKeyword(TokenTag tag) =>
-            typeof(TokenTag).GetEnumName(tag)!.StartsWith("Kw");
+            typeof(TokenTag).GetEnumName(tag)!.StartsWith("Kw", StringComparison.Ordinal);
 
         public static TokenTag? GetKeyword(string term) =>
             term switch {
