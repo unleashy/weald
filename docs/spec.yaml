@@ -126,6 +126,9 @@ Lexical elements:
         and other entities in a program. Keywords are instances of names reserved for denoting
         syntactical constructs. The value of a user-defined name must not be equal to any keyword.
 
+        The ◊syn[Char] immediately after ◊syn[NameOrKeyword] must not be ◊syn[NameContinue] or
+        ◊syn[NameMedial].
+
       - Names:
           - ◊syn:
               ◊caption: names
