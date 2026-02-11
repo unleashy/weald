@@ -1,0 +1,6 @@
+﻿Token.Invalid="invalid underscore placement in float; underscores must be followed by a digit"@0:9
+Token.Invalid="invalid underscore placement in float; underscores must be followed by a digit"@10:9
+Token.Invalid="invalid underscore placement in float; underscores must be followed by a digit"@20:6
+Token.Invalid="invalid underscore placement in float; underscores must be followed by a digit"@27:7
+Token.Invalid="trailing name character in float; are you missing a float exponent?"@35:9
+Token.End@44:0

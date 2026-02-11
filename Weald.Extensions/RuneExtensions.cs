@@ -31,7 +31,6 @@ public static class RuneExtensions
                 '\f'                          => @"\f",
                 '\b'                          => @"\b",
                 '\\'                          => @"\\",
-                '\''                          => @"\'",
                 '\0'                          => @"\0",
                 _ when Rune.IsGraphical(rune) => rune.ToString(),
                 _ when rune.IsBmp             => $@"\u{rune.Value:X4}",

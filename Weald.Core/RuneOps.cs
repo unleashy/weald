@@ -45,4 +45,7 @@ internal static class RuneOps
 
     [Pure]
     public static bool IsSign(Rune rune) => rune is Rune('-' or '+');
+
+    [Pure]
+    public static bool IsIntegerStart(Rune rune) => IsSign(rune) || IsDecDigit(rune);
 }

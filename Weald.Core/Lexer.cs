@@ -77,9 +77,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
 
     private Token? NextNumber()
     {
-        Debug.Assert(
-            _cursor.Check(static rune => RuneOps.IsDecDigit(rune) || RuneOps.IsSign(rune))
-        );
+        Debug.Assert(_cursor.Check(RuneOps.IsIntegerStart));
 
         var mark = _cursor.NewMark();
 
@@ -89,72 +87,49 @@ public struct Lexer(Source source) : IEnumerable<Token>
             }
         }
 
-        Predicate<Rune> isDigit = RuneOps.IsDecDigit;
-        var radix = 'd';
-        var hasUppercaseRadix = false;
-
-        if (_cursor.Match('0') && !_cursor.IsEmpty) {
-            switch (_cursor.Peek) {
-                case Rune('x'): {
-                    _cursor.Next();
-                    isDigit = RuneOps.IsHexDigit;
-                    radix = 'x';
-                    break;
-                }
-
-                case Rune('b'): {
-                    _cursor.Next();
-                    isDigit = RuneOps.IsBinDigit;
-                    radix = 'b';
-                    break;
-                }
-
-                case Rune('X'): {
-                    radix = 'x';
-                    hasUppercaseRadix = true;
-                    break;
-                }
-
-                case Rune('B'): {
-                    radix = 'b';
-                    hasUppercaseRadix = true;
-                    break;
-                }
-
-                default: break;
-            }
-        }
-
-        _ = _cursor.NextWhile(isDigit);
-
         var validUnderscores = true;
-        while (_cursor.Match('_')) {
-            if (!_cursor.NextWhile(isDigit)) {
-                validUnderscores = false;
+
+        var (isDigit, radix) = Radix();
+        Digits(isDigit, ref validUnderscores);
+
+        if (radix == 'd') {
+            if (_cursor.Check('.') && _cursor.MatchNext(RuneOps.IsDecDigit)) {
+                radix = 'f';
+
+                Digits(isDigit, ref validUnderscores);
+            }
+
+            if (_cursor.Check('e') && _cursor.MatchNext(RuneOps.IsIntegerStart)) {
+                radix = 'f';
+
+                _ = _cursor.Match(RuneOps.IsSign);
+                Digits(isDigit, ref validUnderscores);
             }
         }
+
+        var name = radix == 'f' ? "float" : "integer";
 
         var suffixMark = _cursor.NewMark();
-        var hasDashSuffix = _cursor.Check(RuneOps.IsNameMedial);
         var hasNameSuffix = _cursor.NextWhile(RuneOps.IsNameChar);
 
         var loc = _cursor.Locate(mark);
 
         if (hasNameSuffix) {
-            var hint = (hasDashSuffix, hasUppercaseRadix) switch {
-                (_, true) => $"did you mean to use '0{radix}' instead?",
-                (true, _) => "did you mean to put a space after the number?",
+            var firstSuffix = _cursor.Text(suffixMark).EnumerateRunes().First();
+
+            var hint = firstSuffix switch {
+                Rune('X') => "did you mean to use '0x' instead?",
+                Rune('B') => "did you mean to use '0b' instead?",
+                Rune('-') => "did you mean to put a space after the number?",
+                Rune('e') => "are you missing a float exponent?",
+                Rune('E') => "did you mean to use 'e' instead?",
                 _         => null,
             };
 
-            var isDigitSuffix = RuneOps.IsDecDigit(
-                _cursor.Text(suffixMark).EnumerateRunes().First()
-            );
-
             var message =
-                isDigitSuffix
-                    ? $"trailing digit of incorrect base in integer"
-                    : "trailing name character in integer";
+                RuneOps.IsDecDigit(firstSuffix)
+                    ? $"trailing digit of incorrect base in {name}"
+                    : $"trailing name character in {name}";
 
             return Token.Invalid(
                 hint is not null ? $"{message}; {hint}" : message,
@@ -164,16 +139,41 @@ public struct Lexer(Source source) : IEnumerable<Token>
 
         if (!validUnderscores) {
             return Token.Invalid(
-                "invalid underscore placement in integer; underscores must be followed by a digit",
+                $"invalid underscore placement in {name}; underscores must be followed by a digit",
                 loc
             );
         }
 
         return radix switch {
+            'f' => Token.Float(_cursor.Text(mark), loc),
             'x' => Token.HexInteger(_cursor.Text(mark).Replace("0x", ""), loc),
             'b' => Token.BinInteger(_cursor.Text(mark).Replace("0b", ""), loc),
             _   => Token.DecInteger(_cursor.Text(mark), loc),
         };
+    }
+
+    private (Predicate<Rune>, char) Radix()
+    {
+        if (_cursor.Match('0') && !_cursor.IsEmpty) {
+            switch (_cursor.Peek) {
+                case Rune('x'): _cursor.Next(); return (RuneOps.IsHexDigit, 'x');
+                case Rune('b'): _cursor.Next(); return (RuneOps.IsBinDigit, 'b');
+                default: break;
+            }
+        }
+
+        return (RuneOps.IsDecDigit, 'd');
+    }
+
+    private void Digits(Predicate<Rune> isDigit, ref bool validUnderscores)
+    {
+        _ = _cursor.NextWhile(isDigit);
+
+        while (_cursor.Match('_')) {
+            if (!_cursor.NextWhile(isDigit)) {
+                validUnderscores = false;
+            }
+        }
     }
 
     private Token NextName()

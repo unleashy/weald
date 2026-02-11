@@ -104,13 +104,13 @@ public class LexerTests : BaseTest
     private static readonly Gen<char> NameContinueAscii =
         Gen.Char["0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_"];
 
-    private static readonly Gen<char> NameEnd = Gen.Char["?!"];
+    private static readonly Gen<string> NameEnd = Gen.String[Gen.Char["?!"], 0, 1];
 
     [Test]
     public void NamesAscii()
     {
-        Gen.Select(NameStartAscii, Gen.String[NameContinueAscii], NameEnd.Nullable())
-            .Select((s, c, e) => s + c + (e?.ToString() ?? ""))
+        Gen.Select(NameStartAscii, Gen.String[NameContinueAscii], NameEnd)
+            .Select((s, c, e) => s + c + e)
             .Sample(sut => {
                 AssertLex(sut,
                     $"Token.Name={sut.Escape()}@0:{sut.Length}",
@@ -122,8 +122,8 @@ public class LexerTests : BaseTest
     [Test]
     public void NamesAsciiHyphenated()
     {
-        Gen.Select(NameStartAscii, Gen.String[NameContinueAscii, 1, 100], NameEnd.Nullable())
-            .Select((s, c, e) => s + "-" + c + (e?.ToString() ?? ""))
+        Gen.Select(NameStartAscii, Gen.String[NameContinueAscii, 1, 100], NameEnd)
+            .Select((s, c, e) => s + "-" + c + e)
             .Sample(sut => {
                 AssertLex(sut,
                     $"Token.Name={sut.Escape()}@0:{sut.Length}",
@@ -157,22 +157,26 @@ public class LexerTests : BaseTest
 
     private static readonly Gen<string> NumberSign = Gen.String[Gen.Char["+-"], 0, 1];
 
-    [Test]
-    public void Integers()
-    {
+    private static readonly Gen<string> IntegerDecPositive =
         Gen.Select(
-            NumberSign,
             Gen.String[Gen.Char["0123456789"], 1, 1],
             Gen.String[Gen.Char["0123456789_"], 0, 50]
         )
-            .Select((sign, first, rest) => sign + first + rest)
-            .Where(s => !(s.Contains("__") || s.EndsWith('_')))
-            .Sample(sut => {
-                AssertLex(sut,
-                    $"Token.Integer/Dec={sut.Escape()}@0:{sut.Length}",
-                    $"Token.End@{sut.Length}:0"
-                );
-            });
+            .Select((first, rest) => first + rest)
+            .Where(s => !(s.Contains("__") || s.EndsWith('_')));
+
+    private static readonly Gen<string> IntegerDec =
+        Gen.Select(NumberSign, IntegerDecPositive).Select((sign, i) => sign + i);
+
+    [Test]
+    public void Integers()
+    {
+        IntegerDec.Sample(sut => {
+            AssertLex(sut,
+                $"Token.Integer/Dec={sut.Escape()}@0:{sut.Length}",
+                $"Token.End@{sut.Length}:0"
+            );
+        });
     }
 
     [Test]
@@ -217,4 +221,36 @@ public class LexerTests : BaseTest
 
     [Test]
     public Task IntegersBadSuffix() => Verify("0a 123_c 987- 0x- 0xAbck 0b- 0b1112");
+
+    private static readonly Gen<string> FloatExponent = IntegerDec.Select((n) => $"e{n}");
+
+    [Test]
+    public void Floats()
+    {
+        Gen.Select(
+            IntegerDec,
+            Gen.OneOf(
+                Gen.Select(IntegerDecPositive, Gen.OneOf(Gen.Const(""), FloatExponent))
+                    .Select((frac, exp) => $".{frac}{exp}"),
+                FloatExponent
+            )
+        )
+            .Select((i, f) => i + f)
+            .Sample(sut => {
+                AssertLex(sut,
+                    $"Token.Float={sut.Escape()}@0:{sut.Length}",
+                    $"Token.End@{sut.Length}:0"
+                );
+            });
+    }
+
+    [Test]
+    public Task FloatCrazy() => Verify("-0.3_975e-83403267696694266");
+
+    [Test]
+    public Task FloatsBadSeparation() =>
+        Verify("1__2.3__4 -314_.567 9e+56_ 910_e-2 98.76e_23");
+
+    [Test]
+    public Task FloatsBadSuffix() => Verify("3.14xl 75.43e 11.22- 66.55E");
 }
