@@ -278,15 +278,16 @@ Lexical elements:
   - Floats:
       - ◊syn:
           ◊caption: floats
-          Float: Sign? PositiveFloat
-          PositiveFloat:
-            - PositiveInteger `.` PositiveInteger FloatExponent?
-            - PositiveInteger FloatExponent
-          FloatExponent: "`e` Integer"
+          Float: Sign? FloatPositive
+          FloatPositive:
+            - IntegerDec `.` IntegerDec FloatExponent?
+            - IntegerDec FloatExponent
+          FloatExponent: "`e` Sign? IntegerDec"
       - >
         Floats represent rational numbers.
 
-        The ◊syn[Char] immediately after ◊syn[Float] must not be ◊syn[NameStart] or ◊syn[DigitDec].
+        The ◊syn[Char] immediately after ◊syn[Float] must not be ◊syn[NameContinue] or
+        ◊syn[NameMedial].
       - ◊note: >
           For example, ◊code[3.14e] is an error and not the float ◊code[3.14] and the name ◊code[e].
 
