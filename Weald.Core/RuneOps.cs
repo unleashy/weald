@@ -35,4 +35,14 @@ internal static class RuneOps
 
     [Pure]
     public static bool IsDecDigit(Rune rune) => rune is Rune(>= '0' and <= '9');
+
+    [Pure]
+    public static bool IsHexDigit(Rune rune) =>
+        rune is Rune((>= '0' and <= '9') or (>= 'a' and <= 'f') or (>= 'A' and <= 'F'));
+
+    [Pure]
+    public static bool IsBinDigit(Rune rune) => rune is Rune('0' or '1');
+
+    [Pure]
+    public static bool IsSign(Rune rune) => rune is Rune('-' or '+');
 }

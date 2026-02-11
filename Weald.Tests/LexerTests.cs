@@ -155,11 +155,13 @@ public class LexerTests : BaseTest
         Assert.That(actual, Is.EqualTo(Token.Name("noël-Å", Loc.FromLength(0, sut.Length))));
     }
 
+    private static readonly Gen<string> NumberSign = Gen.String[Gen.Char["+-"], 0, 1];
+
     [Test]
     public void Integers()
     {
         Gen.Select(
-            Gen.String[Gen.Char["+-"], 0, 1],
+            NumberSign,
             Gen.String[Gen.Char["0123456789"], 1, 1],
             Gen.String[Gen.Char["0123456789_"], 0, 50]
         )
@@ -167,15 +169,52 @@ public class LexerTests : BaseTest
             .Where(s => !(s.Contains("__") || s.EndsWith('_')))
             .Sample(sut => {
                 AssertLex(sut,
-                    $"Token.Integer={sut.Escape()}@0:{sut.Length}",
+                    $"Token.Integer/Dec={sut.Escape()}@0:{sut.Length}",
                     $"Token.End@{sut.Length}:0"
                 );
             });
     }
 
     [Test]
-    public Task IntegersBadSeparation() => Verify("1__2 -9__ +123_456___7");
+    public void IntegersHex()
+    {
+        Gen.Select(
+            NumberSign,
+            Gen.String[Gen.Char["0123456789abcdefABCDEF"], 1, 1],
+            Gen.String[Gen.Char["0123456789abcdefABCDEF_"], 0, 50]
+        )
+            .Select((sign, first, rest) => sign + "0x" + first + rest)
+            .Where(s => !(s.Contains("__") || s.EndsWith('_')))
+            .Sample(sut => {
+                AssertLex(sut,
+                    $"Token.Integer/Hex={sut.Replace("0x", "").Escape()}@0:{sut.Length}",
+                    $"Token.End@{sut.Length}:0"
+                );
+            });
+    }
 
     [Test]
-    public Task IntegersBadSuffix() => Verify("0a 123_c 987-");
+    public void IntegersBin()
+    {
+        Gen.Select(
+            NumberSign,
+            Gen.String[Gen.Char["01"], 1, 1],
+            Gen.String[Gen.Char["01_"], 0, 50]
+        )
+            .Select((sign, first, rest) => sign + "0b" + first + rest)
+            .Where(s => !(s.Contains("__") || s.EndsWith('_')))
+            .Sample(sut => {
+                AssertLex(sut,
+                    $"Token.Integer/Bin={sut.Replace("0b", "").Escape()}@0:{sut.Length}",
+                    $"Token.End@{sut.Length}:0"
+                );
+            });
+    }
+
+    [Test]
+    public Task IntegersBadSeparation() =>
+        Verify("1__2 -9__ +123_456___7 0x__A 0xCA__FE 0b__0 0b10__11");
+
+    [Test]
+    public Task IntegersBadSuffix() => Verify("0a 123_c 987- 0x- 0xAbck 0b- 0b1112");
 }

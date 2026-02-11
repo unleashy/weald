@@ -51,35 +51,57 @@ public enum TokenTag : byte
     #endregion
 }
 
-public readonly record struct Token(TokenTag Tag, string? Text, Loc Loc)
+public enum TokenSubTag : byte
 {
-    public static Token End(Loc loc) => new(TokenTag.End, null, loc);
+    None,
+    Dec,
+    Hex,
+    Bin,
+}
 
-    public static Token Invalid(string message, Loc loc) => new(TokenTag.Invalid, message, loc);
+public readonly record struct Token(TokenTag Tag, TokenSubTag SubTag, string? Text, Loc Loc)
+{
+    public static Token End(Loc loc) => new(TokenTag.End, TokenSubTag.None, null, loc);
 
-    public static Token Newline(Loc loc) => new(TokenTag.Newline, null, loc);
+    public static Token Invalid(string message, Loc loc) =>
+        new(TokenTag.Invalid, TokenSubTag.None, message, loc);
 
-    public static Token Name(string value, Loc loc) => new(TokenTag.Name, value, loc);
+    public static Token Newline(Loc loc) =>
+        new(TokenTag.Newline, TokenSubTag.None, null, loc);
 
-    public static Token Integer(string value, Loc loc) => new(TokenTag.Integer, value, loc);
+    public static Token Name(string value, Loc loc) =>
+        new(TokenTag.Name, TokenSubTag.None, value, loc);
+
+    public static Token DecInteger(string value, Loc loc) =>
+        new(TokenTag.Integer, TokenSubTag.Dec, value, loc);
+
+    public static Token HexInteger(string value, Loc loc) =>
+        new(TokenTag.Integer, TokenSubTag.Hex, value, loc);
+
+    public static Token BinInteger(string value, Loc loc) =>
+        new(TokenTag.Integer, TokenSubTag.Bin, value, loc);
 
     public static Token Punctuation(TokenTag tag, Loc loc)
     {
         Debug.Assert(TokenTag.IsPunctuation(tag));
-        return new Token(tag, null, loc);
+        return new Token(tag, TokenSubTag.None, null, loc);
     }
 
     public static Token Keyword(TokenTag tag, Loc loc)
     {
         Debug.Assert(TokenTag.IsKeyword(tag));
-        return new Token(tag, null, loc);
+        return new Token(tag, TokenSubTag.None, null, loc);
     }
 
-    public override string ToString() =>
-        Text switch {
-            {} text => $"Token.{Tag}={text.Escape()}@{Loc}",
-            _       => $"Token.{Tag}@{Loc}",
-        };
+    public override string ToString()
+    {
+        var tag = $"Token.{Tag}";
+        var subtag = SubTag != TokenSubTag.None ? $"/{SubTag}" : "";
+        var text = Text is {} t ? $"={t.Escape()}" : "";
+        var loc = $"@{Loc}";
+
+        return tag + subtag + text + loc;
+    }
 }
 
 public static class TokenTagExtensions

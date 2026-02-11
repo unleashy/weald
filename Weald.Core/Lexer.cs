@@ -77,35 +77,87 @@ public struct Lexer(Source source) : IEnumerable<Token>
 
     private Token? NextNumber()
     {
+        Debug.Assert(
+            _cursor.Check(static rune => RuneOps.IsDecDigit(rune) || RuneOps.IsSign(rune))
+        );
+
         var mark = _cursor.NewMark();
 
-        Debug.Assert(!_cursor.IsEmpty);
-        if (_cursor.Peek is Rune('+' or '-')) {
+        if (_cursor.Check(RuneOps.IsSign)) {
             if (!_cursor.MatchNext(RuneOps.IsDecDigit)) {
                 return NextPunctuation();
             }
         }
 
-        var hasNumber = _cursor.NextWhile(RuneOps.IsDecDigit);
-        Debug.Assert(hasNumber);
+        Predicate<Rune> isDigit = RuneOps.IsDecDigit;
+        var radix = 'd';
+        var hasUppercaseRadix = false;
+
+        if (_cursor.Match('0') && !_cursor.IsEmpty) {
+            switch (_cursor.Peek) {
+                case Rune('x'): {
+                    _cursor.Next();
+                    isDigit = RuneOps.IsHexDigit;
+                    radix = 'x';
+                    break;
+                }
+
+                case Rune('b'): {
+                    _cursor.Next();
+                    isDigit = RuneOps.IsBinDigit;
+                    radix = 'b';
+                    break;
+                }
+
+                case Rune('X'): {
+                    radix = 'x';
+                    hasUppercaseRadix = true;
+                    break;
+                }
+
+                case Rune('B'): {
+                    radix = 'b';
+                    hasUppercaseRadix = true;
+                    break;
+                }
+
+                default: break;
+            }
+        }
+
+        _ = _cursor.NextWhile(isDigit);
 
         var validUnderscores = true;
         while (_cursor.Match('_')) {
-            if (!_cursor.NextWhile(RuneOps.IsDecDigit)) {
+            if (!_cursor.NextWhile(isDigit)) {
                 validUnderscores = false;
             }
         }
 
-        var dashSuffix = _cursor.Check(RuneOps.IsNameMedial);
-        var nameSuffix = _cursor.NextWhile(RuneOps.IsNameChar);
+        var suffixMark = _cursor.NewMark();
+        var hasDashSuffix = _cursor.Check(RuneOps.IsNameMedial);
+        var hasNameSuffix = _cursor.NextWhile(RuneOps.IsNameChar);
 
         var loc = _cursor.Locate(mark);
 
-        if (nameSuffix) {
+        if (hasNameSuffix) {
+            var hint = (hasDashSuffix, hasUppercaseRadix) switch {
+                (_, true) => $"did you mean to use '0{radix}' instead?",
+                (true, _) => "did you mean to put a space after the number?",
+                _         => null,
+            };
+
+            var isDigitSuffix = RuneOps.IsDecDigit(
+                _cursor.Text(suffixMark).EnumerateRunes().First()
+            );
+
+            var message =
+                isDigitSuffix
+                    ? $"trailing digit of incorrect base in integer"
+                    : "trailing name character in integer";
+
             return Token.Invalid(
-                dashSuffix
-                    ? "trailing name character in integer; did you mean to put a space after the number?"
-                    : "trailing name character in integer",
+                hint is not null ? $"{message}; {hint}" : message,
                 loc
             );
         }
@@ -117,14 +169,19 @@ public struct Lexer(Source source) : IEnumerable<Token>
             );
         }
 
-        return Token.Integer(_cursor.Text(mark), loc);
+        return radix switch {
+            'x' => Token.HexInteger(_cursor.Text(mark).Replace("0x", ""), loc),
+            'b' => Token.BinInteger(_cursor.Text(mark).Replace("0b", ""), loc),
+            _   => Token.DecInteger(_cursor.Text(mark), loc),
+        };
     }
 
     private Token NextName()
     {
+        Debug.Assert(_cursor.Check(RuneOps.IsNameContinue));
+
         var mark = _cursor.NewMark();
-        var hasName = _cursor.NextWhile(RuneOps.IsNameContinue);
-        Debug.Assert(hasName);
+        _ = _cursor.NextWhile(RuneOps.IsNameContinue);
 
         var validHyphens = true;
         while (_cursor.Match(RuneOps.IsNameMedial)) {
@@ -190,6 +247,8 @@ public struct Lexer(Source source) : IEnumerable<Token>
 
     private Token NextPunctuation()
     {
+        Debug.Assert(_cursor.Check(RuneOps.IsPunctuation));
+
         var mark = _cursor.NewMark();
         var c = _cursor.Peek;
         _cursor.Next();
@@ -258,7 +317,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
                 $"unexpected control character {Rune.Escape(c)}",
 
             (_, UnicodeCategory.Surrogate) =>
-                $"unexpected unpaired surrogate {Rune.Escape(c)}",
+                $"unexpected surrogate {Rune.Escape(c)}",
 
             _ => $"unexpected character {Rune.Escape(c)}",
         };
