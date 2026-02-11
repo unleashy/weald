@@ -1,0 +1,5 @@
+﻿Token.Invalid="trailing characters after name final; did you mean to put a space after the name?"@0:5
+Token.Invalid="trailing characters after name final; did you mean to put a space after the name?"@6:5
+Token.Invalid="trailing characters after name final; did you mean to put a space after the name?"@12:5
+Token.Invalid="trailing characters after name final; did you mean to put a space after the name?"@18:5
+Token.End@23:0

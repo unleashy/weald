@@ -27,5 +27,12 @@ internal static class RuneOps
     public static bool IsNameMedial(Rune rune) => rune is Rune('-');
 
     [Pure]
+    public static bool IsNameFinal(Rune rune) => rune is Rune('?' or '!');
+
+    [Pure]
+    public static bool IsNameChar(Rune rune) =>
+        IsNameContinue(rune) || IsNameMedial(rune) || IsNameFinal(rune);
+
+    [Pure]
     public static bool IsDecDigit(Rune rune) => rune is Rune(>= '0' and <= '9');
 }

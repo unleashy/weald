@@ -1,5 +1,5 @@
 ﻿Token.Name="おやすみなさい"@0:7
 Token.Name="a山b"@8:3
 Token.Name="本-ℹ"@12:3
-Token.Name="देवनागरी"@16:8
-Token.End@24:0
+Token.Name="देवनागरी?"@16:9
+Token.End@25:0

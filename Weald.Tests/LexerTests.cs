@@ -104,11 +104,13 @@ public class LexerTests : BaseTest
     private static readonly Gen<char> NameContinueAscii =
         Gen.Char["0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_"];
 
+    private static readonly Gen<char> NameEnd = Gen.Char["?!"];
+
     [Test]
     public void NamesAscii()
     {
-        Gen.Select(NameStartAscii, Gen.String[NameContinueAscii])
-            .Select((s, c) => s + c)
+        Gen.Select(NameStartAscii, Gen.String[NameContinueAscii], NameEnd.Nullable())
+            .Select((s, c, e) => s + c + (e?.ToString() ?? ""))
             .Sample(sut => {
                 AssertLex(sut,
                     $"Token.Name={sut.Escape()}@0:{sut.Length}",
@@ -120,8 +122,8 @@ public class LexerTests : BaseTest
     [Test]
     public void NamesAsciiHyphenated()
     {
-        Gen.Select(NameStartAscii, Gen.String[NameContinueAscii, 1, 100])
-            .Select((s, c) => s + "-" + c)
+        Gen.Select(NameStartAscii, Gen.String[NameContinueAscii, 1, 100], NameEnd.Nullable())
+            .Select((s, c, e) => s + "-" + c + (e?.ToString() ?? ""))
             .Sample(sut => {
                 AssertLex(sut,
                     $"Token.Name={sut.Escape()}@0:{sut.Length}",
@@ -134,7 +136,10 @@ public class LexerTests : BaseTest
     public Task NamesBadHyphenation() => Verify("abc- _-123- x-- _--_ ");
 
     [Test]
-    public Task NamesUnicode() => Verify("おやすみなさい a山b 本-ℹ देवनागरी");
+    public Task NamesUnicode() => Verify("おやすみなさい a山b 本-ℹ देवनागरी?");
+
+    [Test]
+    public Task NamesOverlongFinal() => Verify("foo?? bar!? bux?! baz!!");
 
     [Test]
     public Task Keywords() => Verify("_ false true");

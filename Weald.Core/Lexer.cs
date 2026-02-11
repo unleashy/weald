@@ -97,8 +97,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
         }
 
         var dashSuffix = _cursor.Check(RuneOps.IsNameMedial);
-        var nameSuffix =
-            _cursor.NextWhile(static r => RuneOps.IsNameContinue(r) || RuneOps.IsNameMedial(r));
+        var nameSuffix = _cursor.NextWhile(RuneOps.IsNameChar);
 
         var loc = _cursor.Locate(mark);
 
@@ -128,13 +127,23 @@ public struct Lexer(Source source) : IEnumerable<Token>
         Debug.Assert(hasName);
 
         var validHyphens = true;
-        while (_cursor.Match('-')) {
+        while (_cursor.Match(RuneOps.IsNameMedial)) {
             if (!_cursor.NextWhile(RuneOps.IsNameContinue)) {
                 validHyphens = false;
             }
         }
 
+        var hasFinal = _cursor.Match(RuneOps.IsNameFinal);
+        var hasTrailing = hasFinal && _cursor.NextWhile(RuneOps.IsNameChar);
+
         var loc = _cursor.Locate(mark);
+
+        if (hasTrailing) {
+            return Token.Invalid(
+                "trailing characters after name final; did you mean to put a space after the name?",
+                loc
+            );
+        }
 
         if (!validHyphens) {
             return Token.Invalid(
@@ -298,61 +307,54 @@ internal struct Cursor(Source source)
     public readonly bool Check([RequireStaticDelegate] Predicate<Rune> predicate) =>
         !IsEmpty && predicate(Peek);
 
-    [MustUseReturnValue]
-    public bool NextWhile([RequireStaticDelegate] Predicate<Rune> predicate)
+    [Pure]
+    public readonly bool Check(char expected) => !IsEmpty && Peek.Value == expected;
+
+    [Pure]
+    public readonly bool Check(string expected)
     {
-        var accepted = false;
-
-        while (!IsEmpty && predicate(Peek)) {
-            _index += Peek.Utf16SequenceLength;
-            accepted = true;
-        }
-
-        return accepted;
+        var end = _index + expected.Length;
+        return end <= source.Length && source[_index .. end].SequenceEqual(expected);
     }
 
     [MustUseReturnValue]
-    public bool NextUntil([RequireStaticDelegate] Predicate<Rune> predicate)
+    public bool Match([RequireStaticDelegate] Predicate<Rune> predicate)
     {
-        while (true) {
-            if (IsEmpty) return false;
-            if (predicate(Peek)) return true;
-
-            _index += Peek.Utf16SequenceLength;
+        if (Check(predicate)) {
+            Next();
+            return true;
+        }
+        else {
+            return false;
         }
     }
 
     [MustUseReturnValue]
     public bool Match(char expected)
     {
-        var matched =
-            _index < source.Length &&
-            Rune.TryGetRuneAt(source.Body, _index, out var rune) &&
-            rune.Value == expected;
-
-        if (matched) {
+        if (Check(expected)) {
             ++_index;
+            return true;
         }
-
-        return matched;
+        else {
+            return false;
+        }
     }
 
     [MustUseReturnValue]
     public bool Match(string expected)
     {
-        var end = _index + expected.Length;
-        var matched =
-            end <= source.Length && source[_index .. end].SequenceEqual(expected);
-
-        if (matched) {
+        if (Check(expected)) {
             _index += expected.Length;
+            return true;
         }
-
-        return matched;
+        else {
+            return false;
+        }
     }
 
     [MustUseReturnValue]
-    public bool MatchNext(Predicate<Rune> predicate)
+    public bool MatchNext([RequireStaticDelegate] Predicate<Rune> predicate)
     {
         var next = _index + Peek.Utf16SequenceLength;
         var matched =
@@ -365,6 +367,33 @@ internal struct Cursor(Source source)
         }
 
         return matched;
+    }
+
+    [MustUseReturnValue]
+    public bool NextWhile([RequireStaticDelegate] Predicate<Rune> predicate)
+    {
+        var accepted = false;
+
+        while (Match(predicate)) {
+            accepted = true;
+        }
+
+        return accepted;
+    }
+
+    [MustUseReturnValue]
+    public bool NextUntil([RequireStaticDelegate] Predicate<Rune> predicate)
+    {
+        while (!IsEmpty) {
+            if (Check(predicate)) {
+                return true;
+            }
+            else {
+                Next();
+            }
+        }
+
+        return false;
     }
 
     [Pure]
