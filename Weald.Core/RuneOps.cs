@@ -22,4 +22,10 @@ internal static class RuneOps
 
     [Pure]
     public static bool IsNameContinue(Rune rune) => UnicodeTables.Predicates.IsNameContinue(rune);
+
+    [Pure]
+    public static bool IsNameMedial(Rune rune) => rune is Rune('-');
+
+    [Pure]
+    public static bool IsDecDigit(Rune rune) => rune is Rune(>= '0' and <= '9');
 }

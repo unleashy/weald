@@ -66,12 +66,59 @@ public struct Lexer(Source source) : IEnumerable<Token>
         if (_cursor.Match("--")) return NextComment(startMark);
 
         return _cursor.Peek switch {
+            Rune(>= '0' and <= '9' or '+' or '-') => NextNumber(),
             var c when RuneOps.IsNameStart(c) => NextName(),
             var c when RuneOps.IsWhitespace(c) => NextWhitespace(),
             var c when RuneOps.IsNewline(c) => NextNewlineOrComment(startMark),
             var c when RuneOps.IsPunctuation(c) => NextPunctuation(),
             _ => NextInvalid(),
         };
+    }
+
+    private Token? NextNumber()
+    {
+        var mark = _cursor.NewMark();
+
+        Debug.Assert(!_cursor.IsEmpty);
+        if (_cursor.Peek is Rune('+' or '-')) {
+            if (!_cursor.MatchNext(RuneOps.IsDecDigit)) {
+                return NextPunctuation();
+            }
+        }
+
+        var hasNumber = _cursor.NextWhile(RuneOps.IsDecDigit);
+        Debug.Assert(hasNumber);
+
+        var validUnderscores = true;
+        while (_cursor.Match('_')) {
+            if (!_cursor.NextWhile(RuneOps.IsDecDigit)) {
+                validUnderscores = false;
+            }
+        }
+
+        var dashSuffix = _cursor.Check(RuneOps.IsNameMedial);
+        var nameSuffix =
+            _cursor.NextWhile(static r => RuneOps.IsNameContinue(r) || RuneOps.IsNameMedial(r));
+
+        var loc = _cursor.Locate(mark);
+
+        if (nameSuffix) {
+            return Token.Invalid(
+                dashSuffix
+                    ? "trailing name character in integer; did you mean to put a space after the number?"
+                    : "trailing name character in integer",
+                loc
+            );
+        }
+
+        if (!validUnderscores) {
+            return Token.Invalid(
+                "invalid underscore placement in integer; underscores must be followed by a digit",
+                loc
+            );
+        }
+
+        return Token.Integer(_cursor.Text(mark), loc);
     }
 
     private Token NextName()
@@ -241,25 +288,15 @@ internal struct Cursor(Source source)
         }
     }
 
-    [Pure]
-    public readonly Rune? PeekNext()
-    {
-        var next = _index + Peek.Utf16SequenceLength;
-        if (next >= source.Length) return null;
-
-        if (Rune.TryGetRuneAt(source.Body, next, out var c)) {
-            return c;
-        }
-        else {
-            return null;
-        }
-    }
-
     public void Next()
     {
         Debug.Assert(!IsEmpty, "cannot advance past the end");
         _index += Peek.Utf16SequenceLength;
     }
+
+    [Pure]
+    public readonly bool Check([RequireStaticDelegate] Predicate<Rune> predicate) =>
+        !IsEmpty && predicate(Peek);
 
     [MustUseReturnValue]
     public bool NextWhile([RequireStaticDelegate] Predicate<Rune> predicate)
@@ -267,7 +304,7 @@ internal struct Cursor(Source source)
         var accepted = false;
 
         while (!IsEmpty && predicate(Peek)) {
-            Next();
+            _index += Peek.Utf16SequenceLength;
             accepted = true;
         }
 
@@ -281,33 +318,53 @@ internal struct Cursor(Source source)
             if (IsEmpty) return false;
             if (predicate(Peek)) return true;
 
-            Next();
+            _index += Peek.Utf16SequenceLength;
         }
     }
 
     [MustUseReturnValue]
     public bool Match(char expected)
     {
-        if (!IsEmpty && Peek.Value == expected) {
-            Next();
-            return true;
+        var matched =
+            _index < source.Length &&
+            Rune.TryGetRuneAt(source.Body, _index, out var rune) &&
+            rune.Value == expected;
+
+        if (matched) {
+            ++_index;
         }
-        else {
-            return false;
-        }
+
+        return matched;
     }
 
     [MustUseReturnValue]
     public bool Match(string expected)
     {
         var end = _index + expected.Length;
-        if (end <= source.Length && source[_index .. end].SequenceEqual(expected)) {
+        var matched =
+            end <= source.Length && source[_index .. end].SequenceEqual(expected);
+
+        if (matched) {
             _index += expected.Length;
-            return true;
         }
-        else {
-            return false;
+
+        return matched;
+    }
+
+    [MustUseReturnValue]
+    public bool MatchNext(Predicate<Rune> predicate)
+    {
+        var next = _index + Peek.Utf16SequenceLength;
+        var matched =
+            next < source.Length &&
+            Rune.TryGetRuneAt(source.Body, next, out var c) &&
+            predicate(c);
+
+        if (matched) {
+            _index = next;
         }
+
+        return matched;
     }
 
     [Pure]

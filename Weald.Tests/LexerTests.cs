@@ -149,4 +149,28 @@ public class LexerTests : BaseTest
 
         Assert.That(actual, Is.EqualTo(Token.Name("noël-Å", Loc.FromLength(0, sut.Length))));
     }
+
+    [Test]
+    public void Integers()
+    {
+        Gen.Select(
+            Gen.String[Gen.Char["+-"], 0, 1],
+            Gen.String[Gen.Char["0123456789"], 1, 1],
+            Gen.String[Gen.Char["0123456789_"], 0, 50]
+        )
+            .Select((sign, first, rest) => sign + first + rest)
+            .Where(s => !(s.Contains("__") || s.EndsWith('_')))
+            .Sample(sut => {
+                AssertLex(sut,
+                    $"Token.Integer={sut.Escape()}@0:{sut.Length}",
+                    $"Token.End@{sut.Length}:0"
+                );
+            });
+    }
+
+    [Test]
+    public Task IntegersBadSeparation() => Verify("1__2 -9__ +123_456___7");
+
+    [Test]
+    public Task IntegersBadSuffix() => Verify("0a 123_c 987-");
 }

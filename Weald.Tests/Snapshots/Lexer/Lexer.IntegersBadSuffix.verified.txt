@@ -1,0 +1,4 @@
+﻿Token.Invalid="trailing name character in integer"@0:2
+Token.Invalid="trailing name character in integer"@3:5
+Token.Invalid="trailing name character in integer; did you mean to put a space after the number?"@9:4
+Token.End@13:0

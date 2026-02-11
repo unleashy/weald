@@ -61,6 +61,8 @@ public readonly record struct Token(TokenTag Tag, string? Text, Loc Loc)
 
     public static Token Name(string value, Loc loc) => new(TokenTag.Name, value, loc);
 
+    public static Token Integer(string value, Loc loc) => new(TokenTag.Integer, value, loc);
+
     public static Token Punctuation(TokenTag tag, Loc loc)
     {
         Debug.Assert(TokenTag.IsPunctuation(tag));
