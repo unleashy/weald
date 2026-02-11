@@ -75,7 +75,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
         };
     }
 
-    private Token? NextNumber()
+    private Token NextNumber()
     {
         Debug.Assert(_cursor.Check(RuneOps.IsIntegerStart));
 
