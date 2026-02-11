@@ -43,6 +43,13 @@ Lexical elements:
         the literal defines another way to represent a character, such as through an escape, it is
         allowed, since the literal character is not being represented.
 
+      - ◊rationale: >
+          Unicode and UTF-8 are common-sense standards, and usage of other encodings is very minimal
+          in 2026. Control characters are forbidden because there is no good reason to have them
+          unescaped in a program (same for surrogates). The ◊U[2028] and ◊U[2029] characters are
+          forbidden because whilst Unicode recommends them for separating lines, Weald does not
+          support them, and forbidding them outright prevents spoofing attacks.
+
   - White space:
       - ◊syn:
           ◊caption: white space
