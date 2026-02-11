@@ -278,13 +278,13 @@ Lexical elements:
   - Floats:
       - ◊syn:
           ◊caption: floats
-          Float: Sign? FloatPositive
-          FloatPositive:
+          Float: Sign? PositiveFloat
+          PositiveFloat:
             - IntegerDec `.` IntegerDec FloatExponent?
             - IntegerDec FloatExponent
           FloatExponent: "`e` Sign? IntegerDec"
       - >
-        Floats represent rational numbers.
+        Floats represent rational numbers and approximations of irrational numbers.
 
         The ◊syn[Char] immediately after ◊syn[Float] must not be ◊syn[NameContinue] or
         ◊syn[NameMedial].
