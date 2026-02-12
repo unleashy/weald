@@ -319,7 +319,7 @@ internal readonly record struct UcdField(int Start, int End, string Property)
         var fields = line.Split(';', opts);
         Debug.Assert(fields.Length > 0);
 
-        var comment = fields[1].IndexOf('#');
+        var comment = fields[1].IndexOf('#', StringComparison.Ordinal);
         var property = (comment >= 0 ? fields[1][0 .. comment] : fields[1]).Trim();
 
         if (!relevantProps.Contains(property)) return null;

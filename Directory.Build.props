@@ -5,6 +5,7 @@
 
         <AnalysisMode>Recommended</AnalysisMode>
         <CodeAnalysisCulture>Invariant</CodeAnalysisCulture>
+        <AnalysisModeGlobalization>Recommended</AnalysisModeGlobalization>
         <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
         <Nullable>enable</Nullable>
         <IsAotCompatible>true</IsAotCompatible>

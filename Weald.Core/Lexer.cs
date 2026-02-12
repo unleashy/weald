@@ -144,11 +144,12 @@ public struct Lexer(Source source) : IEnumerable<Token>
             );
         }
 
+        var text  = _cursor.Text(mark);
         return radix switch {
-            'f' => Token.Float(_cursor.Text(mark), loc),
-            'x' => Token.HexInteger(_cursor.Text(mark).Replace("0x", ""), loc),
-            'b' => Token.BinInteger(_cursor.Text(mark).Replace("0b", ""), loc),
-            _   => Token.DecInteger(_cursor.Text(mark), loc),
+            'f' => Token.Float(text, loc),
+            'x' => Token.HexInteger(text.Replace("0x", "", StringComparison.Ordinal), loc),
+            'b' => Token.BinInteger(text.Replace("0b", "", StringComparison.Ordinal), loc),
+            _   => Token.DecInteger(text, loc),
         };
     }
 

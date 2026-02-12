@@ -163,7 +163,7 @@ public class LexerTests : BaseTest
             Gen.String[Gen.Char["0123456789_"], 0, 50]
         )
             .Select((first, rest) => first + rest)
-            .Where(s => !(s.Contains("__") || s.EndsWith('_')));
+            .Where(s => !(s.Contains("__", StringComparison.Ordinal) || s.EndsWith('_')));
 
     private static readonly Gen<string> IntegerDec =
         Gen.Select(NumberSign, IntegerDecPositive).Select((sign, i) => sign + i);
@@ -188,10 +188,11 @@ public class LexerTests : BaseTest
             Gen.String[Gen.Char["0123456789abcdefABCDEF_"], 0, 50]
         )
             .Select((sign, first, rest) => sign + "0x" + first + rest)
-            .Where(s => !(s.Contains("__") || s.EndsWith('_')))
+            .Where(s => !(s.Contains("__", StringComparison.Ordinal) || s.EndsWith('_')))
             .Sample(sut => {
+                var text = sut.Replace("0x", "", StringComparison.Ordinal).Escape();
                 AssertLex(sut,
-                    $"Token.Integer/Hex={sut.Replace("0x", "").Escape()}@0:{sut.Length}",
+                    $"Token.Integer/Hex={text}@0:{sut.Length}",
                     $"Token.End@{sut.Length}:0"
                 );
             });
@@ -206,10 +207,11 @@ public class LexerTests : BaseTest
             Gen.String[Gen.Char["01_"], 0, 50]
         )
             .Select((sign, first, rest) => sign + "0b" + first + rest)
-            .Where(s => !(s.Contains("__") || s.EndsWith('_')))
+            .Where(s => !(s.Contains("__", StringComparison.Ordinal) || s.EndsWith('_')))
             .Sample(sut => {
+                var text = sut.Replace("0b", "", StringComparison.Ordinal).Escape();
                 AssertLex(sut,
-                    $"Token.Integer/Bin={sut.Replace("0b", "").Escape()}@0:{sut.Length}",
+                    $"Token.Integer/Bin={text}@0:{sut.Length}",
                     $"Token.End@{sut.Length}:0"
                 );
             });
@@ -222,7 +224,7 @@ public class LexerTests : BaseTest
     [Test]
     public Task IntegersBadSuffix() => Verify("0a 123_c 987- 0x- 0xAbck 0b- 0b1112");
 
-    private static readonly Gen<string> FloatExponent = IntegerDec.Select((n) => $"e{n}");
+    private static readonly Gen<string> FloatExponent = IntegerDec.Select(n => $"e{n}");
 
     [Test]
     public void Floats()

@@ -15,7 +15,8 @@ internal static class RuneOps
 
     [Pure]
     public static bool IsPunctuation(Rune rune) =>
-        rune.IsAscii && @"!()[]{}*\&#%`^|~$+-,;:?.@/<=>".Contains((char) rune.Value);
+        rune.IsAscii &&
+        @"!()[]{}*\&#%`^|~$+-,;:?.@/<=>".Contains((char) rune.Value, StringComparison.Ordinal);
 
     [Pure]
     public static bool IsNameStart(Rune rune) => UnicodeTables.Predicates.IsNameStart(rune);
