@@ -66,18 +66,52 @@ public struct Lexer(Source source) : IEnumerable<Token>
         if (_cursor.Match("--")) return NextComment(startMark);
 
         return _cursor.Peek switch {
-            Rune(>= '0' and <= '9' or '+' or '-') => NextNumber(),
-            var c when RuneOps.IsNameStart(c) => NextName(),
-            var c when RuneOps.IsWhitespace(c) => NextWhitespace(),
-            var c when RuneOps.IsNewline(c) => NextNewlineOrComment(startMark),
+            var c when RuneOps.IsWhitespace(c)  => NextWhitespace(),
+            var c when RuneOps.IsNewline(c)     => NextNewlineOrComment(startMark),
+
+            var c when RuneOps.IsNumberStart(c) => NextNumber(),
+            var c when RuneOps.IsNameStart(c)   => NextName(),
+            var c when RuneOps.IsStringQuote(c) => NextString(),
+
             var c when RuneOps.IsPunctuation(c) => NextPunctuation(),
+
             _ => NextInvalid(),
         };
     }
 
+    private Token? NextWhitespace()
+    {
+        _ = _cursor.NextWhile(RuneOps.IsWhitespace);
+        return null;
+    }
+
+    private Token? NextNewlineOrComment(Cursor.Mark startMark)
+    {
+        Debug.Assert(_cursor.IsEmpty || RuneOps.IsNewline(_cursor.Peek));
+
+        while (!_cursor.IsEmpty) {
+            _ = _cursor.NextWhile(RuneOps.IsIgnorable);
+
+            if (_cursor.Match("--")) {
+                _ = _cursor.NextUntil(RuneOps.IsNewline);
+                continue;
+            }
+
+            return Token.Newline(_cursor.Locate(startMark));
+        }
+
+        return null;
+    }
+
+    private Token? NextComment(Cursor.Mark startMark)
+    {
+        _ = _cursor.NextUntil(RuneOps.IsNewline);
+        return NextNewlineOrComment(startMark);
+    }
+
     private Token NextNumber()
     {
-        Debug.Assert(_cursor.Check(RuneOps.IsIntegerStart));
+        Debug.Assert(_cursor.Check(RuneOps.IsNumberStart));
 
         var mark = _cursor.NewMark();
 
@@ -99,7 +133,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
                 Digits(isDigit, ref validUnderscores);
             }
 
-            if (_cursor.Check('e') && _cursor.MatchNext(RuneOps.IsIntegerStart)) {
+            if (_cursor.Check('e') && _cursor.MatchNext(RuneOps.IsNumberStart)) {
                 radix = 'f';
 
                 _ = _cursor.Match(RuneOps.IsSign);
@@ -216,34 +250,120 @@ public struct Lexer(Source source) : IEnumerable<Token>
             : Token.Name(value, loc);
     }
 
-    private Token? NextWhitespace()
+    private Token NextString()
     {
-        _ = _cursor.NextWhile(RuneOps.IsWhitespace);
-        return null;
-    }
+        Debug.Assert(_cursor.Check(RuneOps.IsStringQuote));
 
-    private Token? NextNewlineOrComment(Cursor.Mark startMark)
-    {
-        Debug.Assert(_cursor.IsEmpty || RuneOps.IsNewline(_cursor.Peek));
+        var mark = _cursor.NewMark();
+        _cursor.Next();
 
-        while (!_cursor.IsEmpty) {
-            _ = _cursor.NextWhile(RuneOps.IsIgnorable);
+        string? content = null;
+        List<string> invalidEscapes = [];
+        while (_cursor.CheckNot(RuneOps.IsStringEnd)) {
+            var contentMark = _cursor.NewMark();
+            _ = _cursor.NextUntil(RuneOps.IsStringBreak);
 
-            if (_cursor.Match("--")) {
-                _ = _cursor.NextUntil(RuneOps.IsNewline);
-                continue;
+            var consumedText = _cursor.Text(contentMark);
+            if (content == null) {
+                content = consumedText;
+            }
+            else {
+                content += consumedText;
             }
 
-            return Token.Newline(_cursor.Locate(startMark));
+            if (_cursor.Match(RuneOps.IsStringEscape)) {
+                if (_cursor.IsEmpty) {
+                    break;
+                }
+
+                if (NextEscapeSequence(ref invalidEscapes) is {} escape) {
+                    content += escape;
+                }
+            }
         }
 
-        return null;
+        if (!_cursor.Match(RuneOps.IsStringQuote)) {
+            var message = _cursor.Check(RuneOps.IsNewline)
+                ? @"unclosed string literal; did you mean to place a \ before the newline to form a line continuation?"
+                : "unclosed string literal";
+
+            return Token.Invalid(message, _cursor.Locate(mark));
+        }
+
+        var loc = _cursor.Locate(mark);
+
+        if (invalidEscapes.Count > 0) {
+            var invalidEscapeStr = invalidEscapes.Select(s => $@"\{s}").JoinToString(", ", "", "");
+            var message = invalidEscapes.Count == 1
+                ? $"1 invalid escape sequence: {invalidEscapeStr}"
+                : $"{invalidEscapes.Count} invalid escape sequences: {invalidEscapeStr}";
+            return Token.Invalid(message, loc);
+        }
+
+        return Token.String(content ?? "", loc);
     }
 
-    private Token? NextComment(Cursor.Mark startMark)
+    private string? NextEscapeSequence(ref List<string> invalidEscapes)
     {
-        _ = _cursor.NextUntil(RuneOps.IsNewline);
-        return NextNewlineOrComment(startMark);
+        var mark = _cursor.NewMark();
+        var escape = _cursor.Peek;
+        _cursor.Next();
+
+        switch (escape) {
+            case Rune('"'):  return "\"";
+            case Rune('\\'): return "\\";
+            case Rune('e'):  return "\e";
+            case Rune('n'):  return "\n";
+            case Rune('r'):  return "\r";
+            case Rune('t'):  return "\t";
+
+            case Rune('x'): {
+                var hexMark = _cursor.NewMark();
+                var digits = _cursor.MatchSeq(2, RuneOps.IsHexDigit);
+                var hex = _cursor.Text(hexMark);
+
+                if (digits && Rune.ParseHex(hex) is {} rune) {
+                    return rune.ToString();
+                }
+
+                break;
+            }
+
+            case Rune('u') when _cursor.Match('{'): {
+                var hexMark = _cursor.NewMark();
+                _ = _cursor.MatchSeq(6, RuneOps.IsHexDigit);
+                var hex = _cursor.Text(hexMark);
+                var enclosed = _cursor.Match('}');
+
+                if (enclosed && Rune.ParseHex(hex) is {} rune) {
+                    return rune.ToString();
+                }
+
+                break;
+            }
+
+            case Rune('u'): {
+                var hexMark = _cursor.NewMark();
+                var digits = _cursor.MatchSeq(4, RuneOps.IsHexDigit);
+                var hex = _cursor.Text(hexMark);
+
+                if (digits && Rune.ParseHex(hex) is {} rune) {
+                    return rune.ToString();
+                }
+
+                break;
+            }
+
+            case Rune('\n' or '\r'): {
+                _ = _cursor.NextWhile(RuneOps.IsIgnorable);
+                return "";
+            }
+
+            default: break;
+        }
+
+        invalidEscapes.Add(_cursor.Text(mark));
+        return null;
     }
 
     private Token NextPunctuation()
@@ -377,6 +497,10 @@ internal struct Cursor(Source source)
         return end <= source.Length && source[_index .. end].SequenceEqual(expected);
     }
 
+    [Pure]
+    public readonly bool CheckNot([RequireStaticDelegate] Predicate<Rune> predicate) =>
+        !(IsEmpty || predicate(Peek));
+
     [MustUseReturnValue]
     public bool Match([RequireStaticDelegate] Predicate<Rune> predicate)
     {
@@ -411,6 +535,18 @@ internal struct Cursor(Source source)
         else {
             return false;
         }
+    }
+
+    [MustUseReturnValue]
+    public bool MatchSeq(int count, [RequireStaticDelegate] Predicate<Rune> predicate)
+    {
+        for (var i = 0; i < count; ++i) {
+            if (!Match(predicate)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     [MustUseReturnValue]

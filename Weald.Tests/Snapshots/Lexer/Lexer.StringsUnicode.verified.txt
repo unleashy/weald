@@ -1,0 +1,6 @@
+﻿Token.String="Ò\x83é"@0:14
+Token.String="ÿ\x10\x0F"@15:14
+Token.String="ሴ噸骼\uFEFF"@30:26
+Token.Newline@56:1
+Token.String="\0e\U0010FFFF﹌"@57:35
+Token.End@92:0

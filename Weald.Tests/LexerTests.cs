@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using CsCheck;
 using Weald.Core;
 using Weald.Extensions;
@@ -255,4 +256,77 @@ public class LexerTests : BaseTest
 
     [Test]
     public Task FloatsBadSuffix() => Verify("3.14xl 75.43e 11.22- 66.55E");
+
+    private static readonly SearchValues<char> EscapedChars = SearchValues.Create("\"\\\r\n");
+
+    private static readonly Gen<string> StringWithEscapes =
+        Gen
+            .OneOf(
+                Gen.String.Where(s => !s.ContainsAny(EscapedChars)),
+                Gen.Char["\"\\enrt"].Select(c => $"\\{c}")
+            )
+            .Array[0, 50]
+            .Select(xs => string.Join("", xs));
+
+    [Test]
+    public void StringsStd()
+    {
+        StringWithEscapes.Sample(sut => {
+            AssertLex($"\"{sut}\"",
+                $"Token.String=\"{sut}\"@0:{sut.Length + 2}",
+                $"Token.End@{sut.Length + 2}:0"
+            );
+        });
+    }
+
+    [Test]
+    public void StringsStdUnclosed()
+    {
+        StringWithEscapes.Sample(sut => {
+            AssertLex($"\"{sut}",
+                $"Token.Invalid=\"unclosed string literal\"@0:{sut.Length + 1}",
+                $"Token.End@{sut.Length + 1}:0"
+            );
+        });
+    }
+
+    [Test]
+    public void StringsStdUnclosedWithNewline()
+    {
+        Gen.Select(StringWithEscapes, Gen.Char["\r\n"]).Sample((sut, nl) => {
+            AssertLex($"\"{sut}{nl}",
+                $"Token.Invalid=\"unclosed string literal; did you mean to place a \\\\ before" +
+                    $" the newline to form a line continuation?\"@0:{sut.Length + 1}",
+                $"Token.Newline@{sut.Length + 1}:1",
+                $"Token.End@{sut.Length + 2}:0"
+            );
+        });
+    }
+
+    [Test]
+    public Task StringsUnicode() => Verify(
+        """
+        "\xD2\x83\xE9" "\xff\x10\x0f" "\u1234\u5678\u9aBc\ufeff"
+        "\u{0}\u{0065}\u{10FFFF}\u{00FE4C}"
+        """
+    );
+
+    [Test]
+    public Task StringsInvalidEscapes() => Verify(
+        """
+        "\a" "\b\c" "\{\\\x" "\xzx" "\xaZ" "\u\u0\u00\u000\u000g\ug0065"
+        "\u{ffffff}\u{0065\u{x}\u}"
+        """
+    );
+
+    [Test]
+    public Task StringsContinuation() => Verify(
+        """
+        "foo\
+        bar"
+        "baz\
+
+                     bux"
+        """
+    );
 }

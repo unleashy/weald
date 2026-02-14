@@ -48,5 +48,17 @@ internal static class RuneOps
     public static bool IsSign(Rune rune) => rune is Rune('-' or '+');
 
     [Pure]
-    public static bool IsIntegerStart(Rune rune) => IsSign(rune) || IsDecDigit(rune);
+    public static bool IsNumberStart(Rune rune) => IsSign(rune) || IsDecDigit(rune);
+
+    [Pure]
+    public static bool IsStringQuote(Rune rune) => rune is Rune('"');
+
+    [Pure]
+    public static bool IsStringEscape(Rune rune) => rune is Rune('\\');
+
+    [Pure]
+    public static bool IsStringEnd(Rune rune) => IsStringQuote(rune) || IsNewline(rune);
+
+    [Pure]
+    public static bool IsStringBreak(Rune rune) => IsStringEnd(rune) || IsStringEscape(rune);
 }
