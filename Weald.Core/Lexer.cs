@@ -71,7 +71,8 @@ public struct Lexer(Source source) : IEnumerable<Token>
 
             var c when RuneOps.IsNumberStart(c) => NextNumber(),
             var c when RuneOps.IsNameStart(c)   => NextName(),
-            var c when RuneOps.IsStringQuote(c) => NextString(),
+            Rune('"')                           => NextStringStd(),
+            Rune('`')                           => NextStringRaw(),
 
             var c when RuneOps.IsPunctuation(c) => NextPunctuation(),
 
@@ -250,18 +251,18 @@ public struct Lexer(Source source) : IEnumerable<Token>
             : Token.Name(value, loc);
     }
 
-    private Token NextString()
+    private Token NextStringStd()
     {
-        Debug.Assert(_cursor.Check(RuneOps.IsStringQuote));
+        Debug.Assert(_cursor.Check(IsQuote));
 
         var mark = _cursor.NewMark();
         _cursor.Next();
 
         string? content = null;
         List<string> invalidEscapes = [];
-        while (_cursor.CheckNot(RuneOps.IsStringEnd)) {
+        while (_cursor.CheckNot(IsEnd)) {
             var contentMark = _cursor.NewMark();
-            _ = _cursor.NextUntil(RuneOps.IsStringBreak);
+            _ = _cursor.NextUntil(IsBreak);
 
             var consumedText = _cursor.Text(contentMark);
             if (content == null) {
@@ -271,7 +272,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
                 content += consumedText;
             }
 
-            if (_cursor.Match(RuneOps.IsStringEscape)) {
+            if (_cursor.Match(IsEscape)) {
                 if (_cursor.IsEmpty) {
                     break;
                 }
@@ -282,9 +283,10 @@ public struct Lexer(Source source) : IEnumerable<Token>
             }
         }
 
-        if (!_cursor.Match(RuneOps.IsStringQuote)) {
+        if (!_cursor.Match(IsQuote)) {
             var message = _cursor.Check(RuneOps.IsNewline)
-                ? @"unclosed string literal; did you mean to place a \ before the newline to form a line continuation?"
+                ? @"newline in string literal; did you mean to place a '\' before the newline to" +
+                      " form a line continuation?"
                 : "unclosed string literal";
 
             return Token.Invalid(message, _cursor.Locate(mark));
@@ -301,6 +303,11 @@ public struct Lexer(Source source) : IEnumerable<Token>
         }
 
         return Token.String(content ?? "", loc);
+
+        static bool IsQuote(Rune rune) => rune is Rune('"');
+        static bool IsEnd(Rune rune) => IsQuote(rune) || RuneOps.IsNewline(rune);
+        static bool IsEscape(Rune rune) => rune is Rune('\\');
+        static bool IsBreak(Rune rune) => IsEscape(rune) || IsEnd(rune);
     }
 
     private string? NextEscapeSequence(ref List<string> invalidEscapes)
@@ -366,6 +373,32 @@ public struct Lexer(Source source) : IEnumerable<Token>
         return null;
     }
 
+    private Token NextStringRaw()
+    {
+        Debug.Assert(_cursor.Check(IsQuote));
+
+        var mark = _cursor.NewMark();
+        _cursor.Next();
+
+        var contentMark = _cursor.NewMark();
+        _ = _cursor.NextUntil(IsEnd);
+        var content = _cursor.Text(contentMark);
+
+        if (!_cursor.Match(IsQuote)) {
+            var message = _cursor.Check(RuneOps.IsNewline)
+                ? "newline in raw string literal"
+                : "unclosed raw string literal";
+
+            return Token.Invalid(message, _cursor.Locate(mark));
+        }
+
+        var loc = _cursor.Locate(mark);
+        return Token.String(content, loc);
+
+        static bool IsQuote(Rune rune) => rune is Rune('`');
+        static bool IsEnd(Rune rune) => IsQuote(rune) || RuneOps.IsNewline(rune);
+    }
+
     private Token NextPunctuation()
     {
         Debug.Assert(_cursor.Check(RuneOps.IsPunctuation));
@@ -417,7 +450,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
 
         return tag is {} it
             ? Token.Punctuation(it, loc)
-            : Token.Invalid("invalid punctuation", loc);
+            : Token.Invalid($"invalid punctuation '{Rune.Escape(c)}'", loc);
     }
 
     private Token NextInvalid()

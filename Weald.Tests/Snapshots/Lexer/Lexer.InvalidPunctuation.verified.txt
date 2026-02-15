@@ -1,2 +1,2 @@
-﻿Token.Invalid="invalid punctuation"@0:1
+﻿Token.Invalid="invalid punctuation '#'"@0:1
 Token.End@1:0

@@ -295,8 +295,8 @@ public class LexerTests : BaseTest
     {
         Gen.Select(StringWithEscapes, Gen.Char["\r\n"]).Sample((sut, nl) => {
             AssertLex($"\"{sut}{nl}",
-                $"Token.Invalid=\"unclosed string literal; did you mean to place a \\\\ before" +
-                    $" the newline to form a line continuation?\"@0:{sut.Length + 1}",
+                $"Token.Invalid=\"newline in string literal; did you mean to place a '\\\\'" +
+                    $" before the newline to form a line continuation?\"@0:{sut.Length + 1}",
                 $"Token.Newline@{sut.Length + 1}:1",
                 $"Token.End@{sut.Length + 2}:0"
             );
@@ -329,4 +329,41 @@ public class LexerTests : BaseTest
                      bux"
         """
     );
+
+    private static readonly Gen<string> StringRaw =
+        Gen.String.Where(s => !s.Contains('`', StringComparison.Ordinal));
+
+    [Test]
+    public void StringsRaw()
+    {
+        StringRaw.Sample(sut => {
+            AssertLex($"`{sut}`",
+                $"Token.String={sut.Escape()}@0:{sut.Length + 2}",
+                $"Token.End@{sut.Length + 2}:0"
+            );
+        });
+    }
+
+    [Test]
+    public void StringsRawUnclosed()
+    {
+        StringRaw.Sample(sut => {
+            AssertLex($"`{sut}",
+                $"Token.Invalid=\"unclosed raw string literal\"@0:{sut.Length + 1}",
+                $"Token.End@{sut.Length + 1}:0"
+            );
+        });
+    }
+
+    [Test]
+    public void StringsRawUnclosedWithNewline()
+    {
+        Gen.Select(StringRaw, Gen.Char["\r\n"]).Sample((sut, nl) => {
+            AssertLex($"`{sut}{nl}",
+                $"Token.Invalid=\"newline in raw string literal\"@0:{sut.Length + 1}",
+                $"Token.Newline@{sut.Length + 1}:1",
+                $"Token.End@{sut.Length + 2}:0"
+            );
+        });
+    }
 }
