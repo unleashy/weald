@@ -334,7 +334,7 @@ Lexical elements:
             - '`"`'
 
           StringStdBlock: >
-            `"""` Whitespace* Newline StringStdBlockChar* Newline Whitespace* `"""`
+            `"""` StringStdBlockChar* `"""`
           StringStdBlockChar: >
             CharEscapable but not `"""`
 
@@ -352,7 +352,7 @@ Lexical elements:
             - "'`'"
 
           StringRawBlock: >
-            '```' Whitespace* Newline StringRawBlockChar* Newline Whitespace* '```'
+            '```' StringRawBlockChar* '```'
           StringRawBlockChar: >
             CharEscapable but not '```'
 
@@ -384,7 +384,7 @@ Lexical elements:
         order:
 
       - ◊ol:
-          - Trim leading and trailing white space
+          - Trim leading and trailing white space and newlines
           - Split the sequence into lines at each ◊syn[Newline]
           - For each line, remove the common leading white space, ignoring blank lines
           - Join the resulting lines with ◊U[000A]

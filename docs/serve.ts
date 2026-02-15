@@ -1,9 +1,8 @@
-import html from "./spec.html" with { type: "html" };
 import "./render.ts";
 
 let server = Bun.serve({
   routes: {
-    "/": html,
+    "/": (await import("./spec.html", { with: { type: "html" } })).default,
   },
   development: process.env.NODE_ENV !== "production",
 });
