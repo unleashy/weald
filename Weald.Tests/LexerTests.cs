@@ -315,7 +315,7 @@ public class LexerTests : BaseTest
     public Task StringsInvalidEscapes() => Verify(
         """
         "\a" "\b\c" "\{\\\x" "\xzx" "\xaZ" "\u\u0\u00\u000\u000g\ug0065"
-        "\u{ffffff}\u{0065\u{x}\u}"
+        "\u{}\u{ffffff}\u{0065\u{x}\u}"
         """
     );
 

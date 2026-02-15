@@ -15,12 +15,17 @@ public struct Lexer(Source source) : IEnumerable<Token>
 
     private Cursor _cursor = new(source);
     private State _state = State.Start;
+    private Queue<Token> _queue = [];
 
     public Token Next()
     {
         var startMark = _cursor.NewMark();
 
         while (true) {
+            if (_queue.Count > 0) {
+                return _queue.Dequeue();
+            }
+
             var result = _state switch {
                 State.Start      => NextStart(),
                 State.Tokenising => NextTokenising(startMark),
@@ -251,7 +256,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
             : Token.Name(value, loc);
     }
 
-    private Token NextStringStd()
+    private Token? NextStringStd()
     {
         Debug.Assert(_cursor.Check(IsQuote));
 
@@ -259,7 +264,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
         _cursor.Next();
 
         string? content = null;
-        List<string> invalidEscapes = [];
+        var hasInvalidEscapes = false;
         while (_cursor.CheckNot(IsEnd)) {
             var contentMark = _cursor.NewMark();
             _ = _cursor.NextUntil(IsBreak);
@@ -272,13 +277,12 @@ public struct Lexer(Source source) : IEnumerable<Token>
                 content += consumedText;
             }
 
-            if (_cursor.Match(IsEscape)) {
-                if (_cursor.IsEmpty) {
-                    break;
-                }
-
-                if (NextEscapeSequence(ref invalidEscapes) is {} escape) {
+            if (_cursor.Check(IsEscape)) {
+                if (NextEscapeSequence() is {} escape) {
                     content += escape;
+                }
+                else {
+                    hasInvalidEscapes = true;
                 }
             }
         }
@@ -292,16 +296,11 @@ public struct Lexer(Source source) : IEnumerable<Token>
             return Token.Invalid(message, _cursor.Locate(mark));
         }
 
-        var loc = _cursor.Locate(mark);
-
-        if (invalidEscapes.Count > 0) {
-            var invalidEscapeStr = invalidEscapes.Select(s => $@"\{s}").JoinToString(", ", "", "");
-            var message = invalidEscapes.Count == 1
-                ? $"1 invalid escape sequence: {invalidEscapeStr}"
-                : $"{invalidEscapes.Count} invalid escape sequences: {invalidEscapeStr}";
-            return Token.Invalid(message, loc);
+        if (hasInvalidEscapes) {
+            return null;
         }
 
+        var loc = _cursor.Locate(mark);
         return Token.String(content ?? "", loc);
 
         static bool IsQuote(Rune rune) => rune is Rune('"');
@@ -310,12 +309,21 @@ public struct Lexer(Source source) : IEnumerable<Token>
         static bool IsBreak(Rune rune) => IsEscape(rune) || IsEnd(rune);
     }
 
-    private string? NextEscapeSequence(ref List<string> invalidEscapes)
+    private string? NextEscapeSequence()
     {
+        Debug.Assert(_cursor.Check('\\'));
+
         var mark = _cursor.NewMark();
+        _cursor.Next();
+
+        if (_cursor.IsEmpty) {
+            return null;
+        }
+
         var escape = _cursor.Peek;
         _cursor.Next();
 
+        string invalidMessage;
         switch (escape) {
             case Rune('"'):  return "\"";
             case Rune('\\'): return "\\";
@@ -329,8 +337,14 @@ public struct Lexer(Source source) : IEnumerable<Token>
                 var digits = _cursor.MatchSeq(2, RuneOps.IsHexDigit);
                 var hex = _cursor.Text(hexMark);
 
-                if (digits && Rune.ParseHex(hex) is {} rune) {
+                if (digits) {
+                    var rune = Rune.ParseHex(hex);
+                    Debug.Assert(rune is not null);
                     return rune.ToString();
+                }
+                else {
+                    invalidMessage =
+                        @"invalid \x escape sequence; expected exactly 2 hexadecimal digits";
                 }
 
                 break;
@@ -342,8 +356,21 @@ public struct Lexer(Source source) : IEnumerable<Token>
                 var hex = _cursor.Text(hexMark);
                 var enclosed = _cursor.Match('}');
 
-                if (enclosed && Rune.ParseHex(hex) is {} rune) {
-                    return rune.ToString();
+                if (enclosed) {
+                    if (Rune.ParseHex(hex) is {} rune) {
+                        return rune.ToString();
+                    }
+                    else if (hex == "") {
+                        invalidMessage = @"invalid empty \u{} escape sequence";
+                    }
+                    else {
+                        invalidMessage =
+                            $@"invalid \u{{}} escape sequence; '{hex}' is not a Unicode code point";
+                    }
+                }
+                else {
+                    invalidMessage =
+                        @"unclosed \u{} escape sequence; expected a '}' after at most 6 hexadecimal digits";
                 }
 
                 break;
@@ -354,8 +381,18 @@ public struct Lexer(Source source) : IEnumerable<Token>
                 var digits = _cursor.MatchSeq(4, RuneOps.IsHexDigit);
                 var hex = _cursor.Text(hexMark);
 
-                if (digits && Rune.ParseHex(hex) is {} rune) {
-                    return rune.ToString();
+                if (digits) {
+                    if (Rune.ParseHex(hex) is {} rune) {
+                        return rune.ToString();
+                    }
+                    else {
+                        invalidMessage =
+                            $@"invalid \u escape sequence; '{hex}' is not a Unicode code point";
+                    }
+                }
+                else {
+                    invalidMessage =
+                        @"invalid \u escape sequence; expected exactly 4 hexadecimal digits";
                 }
 
                 break;
@@ -366,10 +403,14 @@ public struct Lexer(Source source) : IEnumerable<Token>
                 return "";
             }
 
-            default: break;
+            default: {
+                invalidMessage = $"unrecognised escape sequence '\\{Rune.Escape(escape)}'";
+                break;
+            }
         }
 
-        invalidEscapes.Add(_cursor.Text(mark));
+        var loc = _cursor.Locate(mark);
+        _queue.Enqueue(Token.Invalid(invalidMessage, loc));
         return null;
     }
 
