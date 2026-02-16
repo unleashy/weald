@@ -1,10 +1,3 @@
-import { render } from "./lib/renderer.ts";
-import spec from "./spec.yaml";
-
-export const SPEC_HTML_FILE = `${import.meta.dirname}/spec.html`;
-
-// language=html
-const SHELL = `
 <!DOCTYPE html>
 <html lang="en-GB">
 <head>
@@ -33,14 +26,3 @@ const SHELL = `
 
 </body>
 </html>
-`;
-
-let date = new Date();
-let output = render(spec, SHELL, (renderer, meta) => ({
-  title: meta.title,
-  version: meta.version,
-  date: date.toISOString().split("T")[0],
-  output: renderer.renderSpec(),
-  toc: renderer.renderToc(),
-}));
-await Bun.write(SPEC_HTML_FILE, output);

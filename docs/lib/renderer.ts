@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from "node:util";
 import Slugger, { slug } from "github-slugger";
 import { unicodeName } from "unicode-name";
 import * as csv from "csv-parse/sync";
@@ -11,13 +12,17 @@ export interface IRenderer {
 export type Spec = Array<Record<string, unknown>>;
 
 export function render(
-  spec: Spec,
+  spec: unknown,
   shell: string,
   getProps: (
     renderer: IRenderer,
     meta: Record<string, string>,
   ) => Record<string, string | undefined>,
 ): string {
+  if (!Array.isArray(spec)) {
+    throw new Error("Spec is not an array");
+  }
+
   let meta = spec[0]?.["◊meta"] as Record<string, string> | undefined;
   if (!isObject(meta)) {
     throw new Error("No metadata found");
@@ -71,7 +76,7 @@ class Renderer implements IRenderer {
 
     const childrenOfLevel = (levelStack: number[]) => {
       return this.#sectionRefs
-        .filter((it) => Bun.deepEquals(levelStack, it.levelStack.slice(1)))
+        .filter((it) => isDeepStrictEqual(levelStack, it.levelStack.slice(1)))
         .filter((it) => this.#isNumbered(it.name));
     };
 
@@ -81,7 +86,8 @@ class Renderer implements IRenderer {
 
       tocOutput.push("<ol>");
       for (let section of children) {
-        tocOutput.push(`<li><a href="#${section.slug}">${section.name}</a>`);
+        let name = this.#renderInlineTags(section.name);
+        tocOutput.push(`<li><a href="#${section.slug}">${name}</a>`);
         renderTocSection(section.levelStack);
         tocOutput.push("</li>");
       }
@@ -127,7 +133,7 @@ class Renderer implements IRenderer {
 
     let section = sections[0];
     let slug = section.slug;
-    let name = section.name;
+    let name = this.#renderInlineTags(section.name);
 
     let tag = `h${1 + section.levelStack.length}`;
     let dottedLevel = section.levelStack.toReversed().join(".");
@@ -374,7 +380,9 @@ class Renderer implements IRenderer {
     this.output.push(`<span>`);
     this.output.push(`<span class="syntax-one-of">one of</span>`);
     this.output.push(`<span class="syntax-seq">`);
-    for (let t of terminals) this.output.push(`<span class="syntax-terminal">${t}</span>`);
+    for (let t of terminals) {
+      this.output.push(`<span class="syntax-terminal">${escapeHtml(t)}</span>`);
+    }
     this.output.push(`</span>`);
     this.output.push(`</span>`);
   }
@@ -693,7 +701,7 @@ class Renderer implements IRenderer {
   #addSectionRef(name: string, levelStack: number[]): SectionRef {
     let ref: SectionRef = {
       name,
-      slug: this.slugger.slug(`sec-${name}`, true),
+      slug: this.slugger.slug(`sec-${stripTags(name)}`, true),
       levelStack: levelStack.slice(),
     };
 
@@ -760,5 +768,16 @@ function parseCsv(data: string) {
     if (!(error instanceof csv.CsvError)) throw error;
 
     return { error };
+  }
+}
+
+function stripTags(s: string): string {
+  while (true) {
+    let newS = s.replaceAll(/◊\w+\[(.*)\]/gu, "$1");
+    if (newS == s) {
+      return newS;
+    }
+
+    s = newS;
   }
 }

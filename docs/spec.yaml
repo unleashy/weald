@@ -190,7 +190,8 @@ Lexical elements:
             - "`true`"
             - "`false`"
       - >
-        Boolean literals represent a logical value that can be either true or false.
+        Boolean literals represent a logical value that can be either true or false. The value is of
+        type Bool.
 
   - Integers:
       - ◊syn:
@@ -284,7 +285,8 @@ Lexical elements:
             - IntegerDec FloatExponent
           FloatExponent: "`e` Sign? IntegerDec"
       - >
-        Floats represent rational numbers and approximations of irrational numbers.
+        Floats represent rational numbers and approximations of irrational numbers. The value is of
+        type Float.
 
         The ◊syn[Char] immediately after ◊syn[Float] must not be ◊syn[NameContinue] or
         ◊syn[NameMedial].
@@ -373,7 +375,9 @@ Lexical elements:
           EscapeContinuation: Newline Whitespace*
       - >
         A string is a sequence of zero or more Unicode code points, resolving to a ◊i[content]
-        value. Strings have with multiple literal forms, described below.
+        value. The value is of type String.
+
+        Strings have with multiple literal forms, described below.
 
         ◊b[Line strings.] Enclosed in one set of quotes. They cannot contain newlines or their own
         quotes. The content of a line string is the sequence of code points within the quotes.
@@ -444,3 +448,137 @@ Lexical elements:
         punctuators are currently used, every ASCII code point that is also Pattern_Syntax is
         reserved for future use; this is a profile of
         ◊[UAX-R3b-1][https://www.unicode.org/reports/tr31/#R3b].
+---
+Expressions:
+  - ◊syn:
+      ◊caption: expressions
+      Expr: ExprConditional
+  - >
+    This chapter covers expressions, the main syntactical unit of Weald. Every expression can be
+    ◊i[evaluated], producing a result. The result ◊i[denotes] a value of some type. During
+    evaluation, zero or more ◊i[side effects] may be produced.
+
+    Expressions can be divided into four groups:
+  - ◊ul:
+      - Primary expressions;
+      - Unary operators;
+      - Binary operators; and
+      - Conditional expressions.
+  - >
+    These can be nested pretty much freely within each other. As such, expression syntax is highly
+    recursive. To express the ◊i[precedence] of the various expression forms, a hierarchy of syntax
+    productions is used: the topmost ◊syn[Expr] production has the lowest precedence, and
+    productions within these productions have the second-lowest precedence, and so on.
+
+    Expressions may have zero or more ◊i[operands], defined by the forms themselves. Those operands
+    are used in evaluating an expression at run-time and also for typechecking an expression at
+    compile time.
+
+  - Primary expressions:
+      - ◊syn:
+          ◊caption: primary expressions
+          ExprPrimary:
+            - Literal
+            - Group
+      - >
+        Primary expressions are the simplest form of expressions: literals and groups. They have the
+        highest precedence possible.
+
+      - Literals:
+          - ◊syn:
+              ◊caption: literals
+              Literal:
+                - Name
+                - Boolean
+                - Integer
+                - Float
+                - String
+          - >
+            Literals are simple ◊[tokens]. They denote the value and type of their corresponding
+            token.
+
+      - Groups:
+          - ◊syn:
+              ◊caption: groups
+              Group:
+                - "`(` Expr `)`"
+          - >
+            Groups (also called parenthesised expressions) allow “breaking out” of normal precedence
+            by inserting an expression in a high-precedence context. Their value and type are the
+            exact same as the expression they contain.
+
+  - Unary operations:
+      - ◊syn:
+          ◊caption: unary operations
+          ExprUnary:
+            - ExprPrimary
+            - "`!` Expr"
+            - "`-` Expr"
+            - "`+` Expr"
+      - >
+        The unary operations are composed of an ◊syn[Expr] operand and an associated operator; the
+        operators are not ◊tt[!], minus ◊tt[-], and plus ◊tt[+]. The operators all have the same
+        precedence and are all right-associative, that is, ◊code[-+x] is the same as ◊code[-(+x)].
+
+  - Exponentiation operation:
+      - ◊syn:
+          ◊caption: exponentiation
+          ExprPower:
+            - ExprUnary `^` ExprPower
+            - ExprUnary
+      - >
+        The exponentiation operation is a right-associative operation.
+
+  - Multiplicative operations:
+      - ◊syn:
+          ◊caption: multiplicative operations
+          ExprMul:
+            - ExprMul `*` ExprPower
+            - ExprMul `/` ExprPower
+            - ExprMul `%` ExprPower
+            - ExprPower
+      - >
+        The multiplicative operations comprise the multiplication ◊tt[*], division ◊tt[/], and
+        modulo ◊tt[%] operators. They are all left-associative and have the same precedence.
+
+  - Additive operations:
+      - ◊syn:
+          ◊caption: additive operations
+          ExprAdd:
+            - ExprAdd `+` ExprMul
+            - ExprAdd `-` ExprMul
+            - ExprMul
+      - >
+        The additive operations comprise the add ◊tt[+] and subtract ◊tt[-], operators. They are
+        both left-associative and have the same precedence.
+
+  - Comparison operations:
+      - ◊syn:
+          ◊caption: comparison operations
+          ExprCmp:
+            - ExprAdd `==` ExprAdd
+            - ExprAdd `!=` ExprAdd
+            - ExprAdd `<` ExprAdd
+            - ExprAdd `<=` ExprAdd
+            - ExprAdd `>` ExprAdd
+            - ExprAdd `>=` ExprAdd
+            - ExprAdd
+      - >
+        The comparison operations comprise the equality ◊tt[==], inequality ◊tt[!=], less than
+        ◊tt[<], less than or equal to ◊tt[<=], greater than ◊tt[>], and greater than or equal to
+        ◊tt[>=] operators. They are non-associative (you cannot chain them together without using
+        parentheses) and have the same precedence.
+
+  - Logical operations:
+      - ◊syn:
+          ◊caption: logical and/logical or expressions
+          ExprLogic:
+            - ExprAnd
+            - ExprOr
+            - ExprCmp
+          ExprAnd: ExprAnd `&&` ExprCmp
+          ExprOr: ExprOr `||` ExprCmp
+      - >
+        The lazy logical operations comprise the logical and ◊tt[&&] and logical or ◊tt[||]
+        operators. They are left-associative and have the same precedence, but you cannot chain
+        ◊tt[&&] with ◊tt[||] (or vice versa) together without using parentheses.
