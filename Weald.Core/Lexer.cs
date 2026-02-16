@@ -420,6 +420,10 @@ public struct Lexer(Source source) : IEnumerable<Token>
             return null;
         }
 
+        if (lines.Count > 0) {
+            lines[^1] = lines[^1].TrimEnd(' ', '\t');
+        }
+
         var content =
             commonPrefix is null
                 ? lines.JoinToString('\n')
@@ -584,7 +588,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
                 : "unclosed raw string literal";
 
             _queue.Enqueue(Token.Invalid(message, _cursor.Locate(mark)));
-            isInvalid = true;
+            return null;
         }
 
         if (isInvalid) {
@@ -643,7 +647,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
             }
 
             var rawLine = _cursor.Text(rawMark);
-            var prefix = rawLine.TakePrefix(c => c is ' ' or '\t');
+            var prefix = rawLine.TakePrefix(static c => c is ' ' or '\t');
             if (prefix == rawLine) {
                 if (!_cursor.Check(triQuotes)) {
                     lines.Add("");
@@ -667,11 +671,15 @@ public struct Lexer(Source source) : IEnumerable<Token>
             _queue.Enqueue(
                 Token.Invalid("unclosed raw block string literal", _cursor.Locate(mark))
             );
-            isInvalid = true;
+            return null;
         }
 
         if (isInvalid) {
             return null;
+        }
+
+        if (lines.Count > 0) {
+            lines[^1] = lines[^1].TrimEnd(' ', '\t');
         }
 
         var content =

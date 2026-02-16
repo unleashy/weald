@@ -384,6 +384,9 @@ public class LexerTests : BaseTest
     public Task StringsStdBlock() => Verify(
         new[] {
             """""""""""""""
+            """ singleline """
+            """"""""""""""",
+            """""""""""""""
             """
             foobar
             """
@@ -439,6 +442,9 @@ public class LexerTests : BaseTest
     [SuppressMessage("Performance", "CA1861:Avoid constant arrays as arguments")]
     public Task StringsRawBlock() => Verify(
         new[] {
+            """""""""""""""
+            ``` singleline ```
+            """"""""""""""",
             """""""""""""""
             ```
             foobar

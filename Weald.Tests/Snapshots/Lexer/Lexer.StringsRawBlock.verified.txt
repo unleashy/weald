@@ -1,12 +1,14 @@
-﻿Token.String="foobar"@0:14
-Token.Newline@14:1
-Token.String="foo\n  bar\n    bux"@15:25
-Token.Newline@40:1
-Token.String="    foo\n  bar\nbux"@41:25
-Token.Newline@66:1
-Token.String="sp\n\n\nacing"@67:18
+﻿Token.String="singleline"@0:18
+Token.Newline@18:1
+Token.String="foobar"@19:14
+Token.Newline@33:1
+Token.String="foo\n  bar\n    bux"@34:25
+Token.Newline@59:1
+Token.String="    foo\n  bar\nbux"@60:25
 Token.Newline@85:1
-Token.String="leading and trailing"@86:34
-Token.Newline@120:1
-Token.String="\\t`escapes are not`\n\\n`interpreted`"@121:43
-Token.End@164:0
+Token.String="sp\n\n\nacing"@86:18
+Token.Newline@104:1
+Token.String="leading and trailing"@105:34
+Token.Newline@139:1
+Token.String="\\t`escapes are not`\n\\n`interpreted`"@140:43
+Token.End@183:0
