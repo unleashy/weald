@@ -79,6 +79,9 @@ public class LexerTests : BaseTest
     }
 
     [Test]
+    public Task CommentWithForbiddenChars() => Verify("-- \0\x7F\u2028\u2029");
+
+    [Test]
     public Task Bom() => Verify("\uFEFF");
 
     [TestCase("EmptyEnd", "#!")]
@@ -87,6 +90,9 @@ public class LexerTests : BaseTest
     [TestCase("Unicode", "#! 🌈🌈🌈🌈\n")]
     [TestCase("WithBom", "\uFEFF#!abcde\n")]
     public Task Hashbang(string name, string text) => Verify(text).UseTextForParameters(name);
+
+    [Test]
+    public Task HashbangWithForbiddenChars() => Verify("#! \0\x7F\u2028\u2029");
 
     [Test]
     public Task Punctuation() =>
@@ -330,6 +336,9 @@ public class LexerTests : BaseTest
         """
     );
 
+    [Test]
+    public Task StringStdWithForbiddenChars() => Verify("\"\0\u007F\u2028\u2029\"");
+
     private static readonly Gen<string> StringRaw =
         Gen.String.Where(s => !s.Contains('`', StringComparison.Ordinal));
 
@@ -366,6 +375,9 @@ public class LexerTests : BaseTest
             );
         });
     }
+
+    [Test]
+    public Task StringRawWithForbiddenChars() => Verify("`\0\u007F\u2028\u2029`");
 
     [Test]
     [SuppressMessage("Performance", "CA1861:Avoid constant arrays as arguments")]
@@ -419,6 +431,11 @@ public class LexerTests : BaseTest
     );
 
     [Test]
+    public Task StringStdBlockWithForbiddenChars() => Verify(
+        "\"\"\" \0\u007F\u2028\u2029 \"\"\""
+    );
+
+    [Test]
     [SuppressMessage("Performance", "CA1861:Avoid constant arrays as arguments")]
     public Task StringsRawBlock() => Verify(
         new[] {
@@ -466,5 +483,10 @@ public class LexerTests : BaseTest
         unclosed
           goes here
         """
+    );
+
+    [Test]
+    public Task StringRawBlockWithForbiddenChars() => Verify(
+        "``` \0\u007F\u2028\u2029 ```"
     );
 }

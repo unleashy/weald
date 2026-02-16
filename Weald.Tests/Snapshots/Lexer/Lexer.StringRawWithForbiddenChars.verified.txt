@@ -1,0 +1,5 @@
+﻿Token.Invalid="forbidden control character \\0 in raw string"@1:1
+Token.Invalid="forbidden control character \\x7F in raw string"@2:1
+Token.Invalid="forbidden newline character \\u2028 in raw string"@3:1
+Token.Invalid="forbidden newline character \\u2029 in raw string"@4:1
+Token.End@6:0

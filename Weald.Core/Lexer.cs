@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Weald.Core;
@@ -52,7 +53,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
     private void SkipHashbang()
     {
         if (_cursor.Match("#!")) {
-            _ = _cursor.NextUntil(RuneOps.IsNewline);
+            _ = _cursor.NextUntil(RuneOps.IsNewline, OnForbiddenInComment);
         }
     }
 
@@ -99,7 +100,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
             _ = _cursor.NextWhile(RuneOps.IsIgnorable);
 
             if (_cursor.Match("--")) {
-                _ = _cursor.NextUntil(RuneOps.IsNewline);
+                _ = _cursor.NextUntil(RuneOps.IsNewline, OnForbiddenInComment);
                 continue;
             }
 
@@ -111,8 +112,27 @@ public struct Lexer(Source source) : IEnumerable<Token>
 
     private Token? NextComment(Cursor.Mark startMark)
     {
-        _ = _cursor.NextUntil(RuneOps.IsNewline);
+        _ = _cursor.NextUntil(RuneOps.IsNewline, OnForbiddenInComment);
         return NextNewlineOrComment(startMark);
+    }
+
+    private readonly void OnForbiddenInComment(Rune rune, Loc loc)
+    {
+        var message = (rune, Rune.GetUnicodeCategory(rune)) switch {
+            (Rune('\u2028' or '\u2029'), _) =>
+                $"forbidden newline character {Rune.Escape(rune)} in comment " +
+                    @"only LF \n, CRLF \r\n, or CR \r are allowed",
+
+            (_, UnicodeCategory.Control) =>
+                $"forbidden control character {Rune.Escape(rune)} in comment",
+
+            (_, UnicodeCategory.Surrogate) =>
+                "surrogate in comment; maybe the source file is not UTF-8?",
+
+            _ => throw new SwitchExpressionException(rune),
+        };
+
+        _queue.Enqueue(Token.Invalid(message, loc));
     }
 
     private Token NextNumber()
@@ -269,10 +289,13 @@ public struct Lexer(Source source) : IEnumerable<Token>
         _cursor.Next();
 
         string? content = null;
-        var hasInvalidEscapes = false;
+        var isInvalid = false;
         while (_cursor.CheckNot(IsEnd)) {
             var contentMark = _cursor.NewMark();
-            _ = _cursor.NextUntil(IsBreak);
+            var stopReason = _cursor.NextUntil(IsBreak, OnForbiddenInStdString);
+            if (stopReason == Cursor.StopReason.Forbidden) {
+                isInvalid = true;
+            }
 
             var consumedText = _cursor.Text(contentMark);
             if (content == null) {
@@ -287,7 +310,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
                     content += escape;
                 }
                 else {
-                    hasInvalidEscapes = true;
+                    isInvalid = true;
                 }
             }
         }
@@ -302,7 +325,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
             return null;
         }
 
-        if (hasInvalidEscapes) {
+        if (isInvalid) {
             return null;
         }
 
@@ -324,11 +347,10 @@ public struct Lexer(Source source) : IEnumerable<Token>
         var mark = _cursor.NewMark();
         _cursor.NextSeq(3);
 
-        var isInvalid = false;
-
         _ = _cursor.NextWhile(RuneOps.IsWhitespace);
         _ = _cursor.Match(RuneOps.IsNewline);
 
+        var isInvalid = false;
         List<string> lines = [];
         string? commonPrefix = null;
         while (_cursor.CheckNot(triQuotes)) {
@@ -337,9 +359,13 @@ public struct Lexer(Source source) : IEnumerable<Token>
             var line = "";
             while (true) {
                 var contentMark = _cursor.NewMark();
-                _ = _cursor.NextUntil(static rune =>
-                    RuneOps.IsNewline(rune) || IsEscape(rune) || IsQuote(rune)
+                var stopReason = _cursor.NextUntil(
+                    static rune => RuneOps.IsNewline(rune) || IsEscape(rune) || IsQuote(rune),
+                    OnForbiddenInStdString
                 );
+                if (stopReason == Cursor.StopReason.Forbidden) {
+                    isInvalid = true;
+                }
 
                 line += _cursor.Text(contentMark);
 
@@ -511,20 +537,45 @@ public struct Lexer(Source source) : IEnumerable<Token>
         return null;
     }
 
-    private Token NextStringRaw() =>
+    private readonly void OnForbiddenInStdString(Rune rune, Loc loc)
+    {
+        var message = (rune, Rune.GetUnicodeCategory(rune)) switch {
+            (Rune('\u2028' or '\u2029'), _) =>
+                $"forbidden newline character {Rune.Escape(rune)} in string; escape it with" +
+                $" {Rune.Escape(rune)}",
+
+            (_, UnicodeCategory.Control) =>
+                $"forbidden control character {Rune.Escape(rune)} in string; escape it with" +
+                $" {Rune.Escape(rune)}",
+
+            (_, UnicodeCategory.Surrogate) =>
+                "surrogate in string; maybe the source file is not UTF-8?",
+
+            _ => throw new SwitchExpressionException(rune),
+        };
+
+        _queue.Enqueue(Token.Invalid(message, loc));
+    }
+
+    private Token? NextStringRaw() =>
         _cursor.Check("```")
             ? NextStringRawBlock()
             : NextStringRawLine();
 
-    private Token NextStringRawLine()
+    private Token? NextStringRawLine()
     {
         Debug.Assert(_cursor.Check(IsQuote));
 
         var mark = _cursor.NewMark();
         _cursor.Next();
 
+        var isInvalid = false;
         var contentMark = _cursor.NewMark();
-        _ = _cursor.NextUntil(IsEnd);
+        var stopReason = _cursor.NextUntil(IsEnd, OnForbiddenInRawString);
+        if (stopReason == Cursor.StopReason.Forbidden) {
+            isInvalid = true;
+        }
+
         var content = _cursor.Text(contentMark);
 
         if (!_cursor.Match(IsQuote)) {
@@ -532,7 +583,12 @@ public struct Lexer(Source source) : IEnumerable<Token>
                 ? "newline in raw string literal"
                 : "unclosed raw string literal";
 
-            return Token.Invalid(message, _cursor.Locate(mark));
+            _queue.Enqueue(Token.Invalid(message, _cursor.Locate(mark)));
+            isInvalid = true;
+        }
+
+        if (isInvalid) {
+            return null;
         }
 
         var loc = _cursor.Locate(mark);
@@ -542,7 +598,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
         static bool IsEnd(Rune rune) => IsQuote(rune) || RuneOps.IsNewline(rune);
     }
 
-    private Token NextStringRawBlock()
+    private Token? NextStringRawBlock()
     {
         const string triQuotes = "```";
 
@@ -554,6 +610,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
         _ = _cursor.NextWhile(RuneOps.IsWhitespace);
         _ = _cursor.Match(RuneOps.IsNewline);
 
+        var isInvalid = false;
         List<string> lines = [];
         string? commonPrefix = null;
         while (_cursor.CheckNot(triQuotes)) {
@@ -562,7 +619,13 @@ public struct Lexer(Source source) : IEnumerable<Token>
             var line = "";
             while (true) {
                 var contentMark = _cursor.NewMark();
-                _ = _cursor.NextUntil(static rune => RuneOps.IsNewline(rune) || IsQuote(rune));
+                var stopReason = _cursor.NextUntil(
+                    static rune => RuneOps.IsNewline(rune) || IsQuote(rune),
+                    OnForbiddenInRawString
+                );
+                if (stopReason == Cursor.StopReason.Forbidden) {
+                    isInvalid = true;
+                }
 
                 line += _cursor.Text(contentMark);
 
@@ -601,7 +664,14 @@ public struct Lexer(Source source) : IEnumerable<Token>
         }
 
         if (!_cursor.Match(triQuotes)) {
-            return Token.Invalid("unclosed raw block string literal", _cursor.Locate(mark));
+            _queue.Enqueue(
+                Token.Invalid("unclosed raw block string literal", _cursor.Locate(mark))
+            );
+            isInvalid = true;
+        }
+
+        if (isInvalid) {
+            return null;
         }
 
         var content =
@@ -613,6 +683,24 @@ public struct Lexer(Source source) : IEnumerable<Token>
         return Token.String(content, loc);
 
         static bool IsQuote(Rune rune) => rune is Rune('`');
+    }
+
+    private readonly void OnForbiddenInRawString(Rune rune, Loc loc)
+    {
+        var message = (rune, Rune.GetUnicodeCategory(rune)) switch {
+            (Rune('\u2028' or '\u2029'), _) =>
+                $"forbidden newline character {Rune.Escape(rune)} in raw string",
+
+            (_, UnicodeCategory.Control) =>
+                $"forbidden control character {Rune.Escape(rune)} in raw string",
+
+            (_, UnicodeCategory.Surrogate) =>
+                "surrogate in raw string; maybe the source file is not UTF-8?",
+
+            _ => throw new SwitchExpressionException(rune),
+        };
+
+        _queue.Enqueue(Token.Invalid(message, loc));
     }
 
     private Token NextPunctuation()
@@ -678,7 +766,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
         var message = (c, Rune.GetUnicodeCategory(c)) switch {
             (Rune('\u0085' or '\u2028' or '\u2029'), _) =>
                 $"unexpected newline character {Rune.Escape(c)}; " +
-                @"only LF \n, CRLF \r\n, or CR \r are allowed",
+                    @"only LF \n, CRLF \r\n, or CR \r are allowed",
 
             (Rune('\f' or '\v'), _) or (_, UnicodeCategory.SpaceSeparator) =>
                 $"unexpected whitespace character {Rune.Escape(c)}; only space and tab are allowed",
@@ -687,7 +775,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
                 $"unexpected control character {Rune.Escape(c)}",
 
             (_, UnicodeCategory.Surrogate) =>
-                $"unexpected surrogate {Rune.Escape(c)}",
+                "unexpected surrogate; maybe the source file is not UTF-8?",
 
             _ => $"unexpected character {Rune.Escape(c)}",
         };
@@ -713,6 +801,13 @@ public struct Lexer(Source source) : IEnumerable<Token>
 
 internal struct Cursor(Source source)
 {
+    public enum StopReason
+    {
+        Matched,
+        Empty,
+        Forbidden,
+    }
+
     public readonly record struct Mark(int Position);
 
     private int _index = 0;
@@ -839,18 +934,30 @@ internal struct Cursor(Source source)
     }
 
     [MustUseReturnValue]
-    public bool NextUntil([RequireStaticDelegate] Predicate<Rune> predicate)
+    public StopReason NextUntil(
+        [RequireStaticDelegate] Predicate<Rune> predicate,
+        Action<Rune, Loc> onForbidden
+    )
     {
+        var stopReason = StopReason.Empty;
         while (!IsEmpty) {
             if (Check(predicate)) {
-                return true;
+                if (stopReason == StopReason.Empty) {
+                    stopReason = StopReason.Matched;
+                }
+
+                break;
             }
-            else {
-                Next();
+            else if (Check(RuneOps.IsForbidden)) {
+                var rune = Peek;
+                onForbidden(rune, Loc.FromLength(_index, rune.Utf16SequenceLength));
+                stopReason = StopReason.Forbidden;
             }
+
+            Next();
         }
 
-        return false;
+        return stopReason;
     }
 
     [Pure]

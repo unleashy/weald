@@ -1,9 +1,16 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Text;
 
 namespace Weald.Core;
 
 internal static class RuneOps
 {
+    [Pure]
+    public static bool IsForbidden(Rune rune) =>
+        (Rune.IsControl(rune) && !IsIgnorable(rune)) ||
+        (rune is Rune('\u2028' or '\u2029')) ||
+        (Rune.GetUnicodeCategory(rune) == UnicodeCategory.Surrogate);
+
     [Pure]
     public static bool IsIgnorable(Rune rune) => IsWhitespace(rune) || IsNewline(rune);
 

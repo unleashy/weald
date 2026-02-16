@@ -1,0 +1,5 @@
+﻿Token.Invalid="forbidden control character \\0 in comment"@3:1
+Token.Invalid="forbidden control character \\x7F in comment"@4:1
+Token.Invalid="forbidden newline character \\u2028 in comment only LF \\n, CRLF \\r\\n, or CR \\r are allowed"@5:1
+Token.Invalid="forbidden newline character \\u2029 in comment only LF \\n, CRLF \\r\\n, or CR \\r are allowed"@6:1
+Token.End@7:0
