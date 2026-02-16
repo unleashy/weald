@@ -366,4 +366,55 @@ public class LexerTests : BaseTest
             );
         });
     }
+
+    [Test]
+    [SuppressMessage("Performance", "CA1861:Avoid constant arrays as arguments")]
+    public Task StringsStdBlock() => Verify(
+        new[] {
+            """""""""""""""
+            """
+            foobar
+            """
+            """"""""""""""",
+            """""""""""""""
+            """
+            foo
+              bar
+                bux
+            """
+            """"""""""""""",
+            """""""""""""""
+            """
+                foo
+              bar
+            bux
+            """
+            """"""""""""""",
+            """""""""""""""
+            """
+            sp
+
+
+            acing
+            """
+            """"""""""""""",
+            "\"\"\"   \nleading and trailing\n   \"\"\"",
+            """""""""""""""
+            """
+            \t"escapes are taken"
+            \n"literally for"
+            \x20"indent removal"
+            """
+            """"""""""""""",
+        }.JoinToString('\n')
+    );
+
+    [Test]
+    public Task StringsStdBlockUnclosed() => Verify(
+        """"
+        """
+        unclosed
+          goes here
+        """"
+    );
 }

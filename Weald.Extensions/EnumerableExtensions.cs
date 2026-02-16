@@ -5,20 +5,24 @@ namespace Weald.Extensions;
 
 public static class EnumerableExtensions
 {
-    [Pure]
-    public static string JoinToString<T>(
-        this IEnumerable<T> self,
-        string separator,
-        string prefix,
-        string suffix
-    )
+    extension<T>(IEnumerable<T> self)
     {
-        var sb = new StringBuilder(prefix.Length + suffix.Length);
+        [Pure]
+        public string JoinToString(char separator) => string.Join(separator, self);
 
-        sb.Append(prefix);
-        sb.AppendJoin(separator, self);
-        sb.Append(suffix);
+        [Pure]
+        public string JoinToString(string separator) => string.Join(separator, self);
 
-        return sb.ToString();
+        [Pure]
+        public string JoinToString(string separator, string prefix, string suffix)
+        {
+            var sb = new StringBuilder(prefix.Length + suffix.Length);
+
+            sb.Append(prefix);
+            sb.AppendJoin(separator, self);
+            sb.Append(suffix);
+
+            return sb.ToString();
+        }
     }
 }

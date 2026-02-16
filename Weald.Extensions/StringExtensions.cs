@@ -21,5 +21,21 @@ public static class StringExtensions
             var si = new StringInfo(self);
             return si.LengthInTextElements;
         }
+
+        [Pure]
+        public string TakePrefix(Predicate<char> predicate)
+        {
+            var end = 0;
+            for (var i = 0; i < self.Length; ++i) {
+                if (predicate(self[i])) {
+                    end = i + 1;
+                }
+                else {
+                    break;
+                }
+            }
+
+            return self[0 .. end];
+        }
     }
 }
