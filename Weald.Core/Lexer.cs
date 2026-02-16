@@ -357,7 +357,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
                     break;
                 }
                 else {
-                    Debug.Assert(_cursor.Check('"'));
+                    Debug.Assert(_cursor.Check(IsQuote));
                     _cursor.Next();
 
                     line += '"';
@@ -511,7 +511,12 @@ public struct Lexer(Source source) : IEnumerable<Token>
         return null;
     }
 
-    private Token NextStringRaw()
+    private Token NextStringRaw() =>
+        _cursor.Check("```")
+            ? NextStringRawBlock()
+            : NextStringRawLine();
+
+    private Token NextStringRawLine()
     {
         Debug.Assert(_cursor.Check(IsQuote));
 
@@ -535,6 +540,79 @@ public struct Lexer(Source source) : IEnumerable<Token>
 
         static bool IsQuote(Rune rune) => rune is Rune('`');
         static bool IsEnd(Rune rune) => IsQuote(rune) || RuneOps.IsNewline(rune);
+    }
+
+    private Token NextStringRawBlock()
+    {
+        const string triQuotes = "```";
+
+        Debug.Assert(_cursor.Check(triQuotes));
+
+        var mark = _cursor.NewMark();
+        _cursor.NextSeq(3);
+
+        _ = _cursor.NextWhile(RuneOps.IsWhitespace);
+        _ = _cursor.Match(RuneOps.IsNewline);
+
+        List<string> lines = [];
+        string? commonPrefix = null;
+        while (_cursor.CheckNot(triQuotes)) {
+            var rawMark = _cursor.NewMark();
+
+            var line = "";
+            while (true) {
+                var contentMark = _cursor.NewMark();
+                _ = _cursor.NextUntil(static rune => RuneOps.IsNewline(rune) || IsQuote(rune));
+
+                line += _cursor.Text(contentMark);
+
+                if (
+                    _cursor.IsEmpty || _cursor.Check(triQuotes) || _cursor.Check(RuneOps.IsNewline)
+                ) {
+                    break;
+                }
+                else {
+                    Debug.Assert(_cursor.Check(IsQuote));
+                    _cursor.Next();
+
+                    line += '`';
+                }
+            }
+
+            var rawLine = _cursor.Text(rawMark);
+            var prefix = rawLine.TakePrefix(c => c is ' ' or '\t');
+            if (prefix == rawLine) {
+                if (!_cursor.Check(triQuotes)) {
+                    lines.Add("");
+                }
+            }
+            else {
+                if (
+                    commonPrefix == null ||
+                    commonPrefix.StartsWith(prefix, StringComparison.Ordinal)
+                ) {
+                    commonPrefix = prefix;
+                }
+
+                lines.Add(line);
+            }
+
+            _ = _cursor.Match(RuneOps.IsNewline);
+        }
+
+        if (!_cursor.Match(triQuotes)) {
+            return Token.Invalid("unclosed raw block string literal", _cursor.Locate(mark));
+        }
+
+        var content =
+            commonPrefix is null
+                ? lines.JoinToString('\n')
+                : lines.Select(line => line[commonPrefix.Length ..]).JoinToString('\n');
+
+        var loc = _cursor.Locate(mark);
+        return Token.String(content, loc);
+
+        static bool IsQuote(Rune rune) => rune is Rune('`');
     }
 
     private Token NextPunctuation()

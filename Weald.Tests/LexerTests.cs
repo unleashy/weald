@@ -417,4 +417,54 @@ public class LexerTests : BaseTest
           goes here
         """"
     );
+
+    [Test]
+    [SuppressMessage("Performance", "CA1861:Avoid constant arrays as arguments")]
+    public Task StringsRawBlock() => Verify(
+        new[] {
+            """""""""""""""
+            ```
+            foobar
+            ```
+            """"""""""""""",
+            """""""""""""""
+            ```
+            foo
+              bar
+                bux
+            ```
+            """"""""""""""",
+            """""""""""""""
+            ```
+                foo
+              bar
+            bux
+            ```
+            """"""""""""""",
+            """""""""""""""
+            ```
+            sp
+
+
+            acing
+            ```
+            """"""""""""""",
+            "```   \nleading and trailing\n   ```",
+            """""""""""""""
+            ```
+            \t`escapes are not`
+            \n`interpreted`
+            ```
+            """"""""""""""",
+        }.JoinToString('\n')
+    );
+
+    [Test]
+    public Task StringsRawBlockUnclosed() => Verify(
+        """
+        ```
+        unclosed
+          goes here
+        """
+    );
 }
