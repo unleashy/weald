@@ -462,7 +462,7 @@ class Renderer implements IRenderer {
           `<abbr title="${nameCodePoint(term.value)}" class="syntax-unicode">U+${term.value}</abbr>`,
         );
       } else {
-        s.push(`<span class="syntax-${term.type}">${term.value}</span>`);
+        s.push(`<span class="syntax-${term.type}">${escapeHtml(term.value)}</span>`);
       }
 
       if (term.quantifier) {

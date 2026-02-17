@@ -290,6 +290,7 @@ a:is(:hover, :focus, :active, :focus) .heading-level {
 
     overflow-y: auto;
     scrollbar-width: thin;
+    overscroll-behavior: contain;
 
     font-size: var(--f--2);
   }
