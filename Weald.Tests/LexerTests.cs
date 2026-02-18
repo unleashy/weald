@@ -15,19 +15,20 @@ public class LexerTests : BaseTest
     {
         Settings.UseDirectory("Snapshots/Lexer");
         Settings.UseTypeName("Lexer");
+        Settings.DisableDiff();
     }
 
     private static SettingsTask Verify(string text)
     {
         var source = Source.FromString("", text);
-        var lexer = new Lexer(source);
+        var lexer = Lexer.Create(source);
 
         return Verifier.Verify(string.Join('\n', lexer), Settings);
     }
 
     private static void AssertLex(string body, string token, params string[] rest)
     {
-        var lexer = new Lexer(Source.FromString("", body));
+        var lexer = Lexer.Create(Source.FromString("", body));
         Assert.That(
             lexer.Select(t => t.ToString()),
             Is.EquivalentTo([token, ..rest]),
@@ -158,7 +159,7 @@ public class LexerTests : BaseTest
     public void NamesAreNormalised()
     {
         const string sut = "noe\u0308l-\u212b";
-        var lexer = new Lexer(Source.FromString("", sut));
+        var lexer = Lexer.Create(Source.FromString("", sut));
 
         var actual = lexer.Next();
 

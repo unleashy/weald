@@ -1,48 +1,63 @@
 ﻿using System.Collections;
+using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
+using static Weald.Core.TokenTag;
 
 namespace Weald.Core;
 
-public struct Lexer(Source source) : IEnumerable<Token>
+public sealed class Lexer : IEnumerable<Token>
 {
-    private enum State : byte
+    private ImmutableArray<Token> _tokens;
+
+    [Pure]
+    public static Lexer Create(Source source)
     {
-        Start,
-        Tokenising,
-        End,
+        var tokens = ImmutableArray.CreateBuilder<Token>();
+        new Core(source, tokens).Tokenise();
+        return new Lexer(tokens.DrainToImmutable());
     }
 
-    private Cursor _cursor = new(source);
-    private State _state = State.Start;
-    private Queue<Token> _queue = [];
+    private Lexer(ImmutableArray<Token> tokens)
+    {
+        _tokens = tokens;
+    }
 
+    public Token Peek {
+        [Pure]
+        get => _tokens.IsDefaultOrEmpty ? Token.End(default) : _tokens[0];
+    }
+
+    [MustUseReturnValue]
     public Token Next()
     {
-        var startMark = _cursor.NewMark();
+        var peek = Peek;
 
-        while (true) {
-            if (_queue.Count > 0) {
-                return _queue.Dequeue();
-            }
-
-            var result = _state switch {
-                State.Start      => NextStart(),
-                State.Tokenising => NextTokenising(startMark),
-                State.End        => NextEnd(),
-            };
-
-            if (result is {} token) return token;
+        if (peek.Tag != End) {
+            _tokens = _tokens[1..];
         }
+
+        return peek;
     }
 
-    private Token? NextStart()
+    public IEnumerator<Token> GetEnumerator() => ((IEnumerable<Token>)_tokens).GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+}
+
+file struct Core(Source source, ImmutableArray<Token>.Builder tokens)
+{
+    private Cursor _cursor = new(source);
+
+    public void Tokenise()
     {
         SkipBom();
         SkipHashbang();
-        _state = State.Tokenising;
-        return null;
+
+        EmitTokens();
+
+        EmitEnd();
     }
 
     private void SkipBom()
@@ -57,66 +72,110 @@ public struct Lexer(Source source) : IEnumerable<Token>
         }
     }
 
-    private readonly Token NextEnd()
+    private void EmitTokens()
     {
-        return Token.End(_cursor.Locate());
-    }
+        while (true) {
+            EmitIgnorable();
 
-    private Token? NextTokenising(Cursor.Mark startMark)
-    {
-        if (_cursor.IsEmpty) {
-            _state = State.End;
-            return null;
-        }
+            if (_cursor.IsEmpty) break;
 
-        if (_cursor.Match("--")) return NextComment(startMark);
+            var mark = _cursor.NewMark();
+            var c = _cursor.Peek;
+            switch (c.Value) {
+                case '_' or >= 'A' and <= 'Z' or >= 'a' and <= 'z': {
+                    EmitName();
+                    break;
+                }
 
-        return _cursor.Peek switch {
-            var c when RuneOps.IsWhitespace(c)  => NextWhitespace(),
-            var c when RuneOps.IsNewline(c)     => NextNewlineOrComment(startMark),
+                case >= '0' and <= '9':
+                case '+' or '-' when _cursor.CheckNext(RuneOps.IsDecDigit): {
+                    EmitNumber();
+                    break;
+                }
 
-            var c when RuneOps.IsNumberStart(c) => NextNumber(),
-            var c when RuneOps.IsNameStart(c)   => NextName(),
-            Rune('"')                           => NextStringStd(),
-            Rune('`')                           => NextStringRaw(),
+                case '"': EmitStringStd(); break;
+                case '`': EmitStringRaw(); break;
 
-            var c when RuneOps.IsPunctuation(c) => NextPunctuation(),
+                #region Punctuation
 
-            _ => NextInvalid(),
-        };
-    }
+                case '(':  EmitPunct(PParenOpen, mark); break;
+                case ')':  EmitPunct(PParenClose, mark); break;
+                case '[':  EmitPunct(PBracketOpen, mark); break;
+                case ']':  EmitPunct(PBracketClose, mark); break;
+                case '{':  EmitPunct(PBraceOpen, mark); break;
+                case '}':  EmitPunct(PBraceClose, mark); break;
+                case '*':  EmitPunct(PStar, mark); break;
+                case '\\': EmitPunct(PBackslash, mark); break;
+                case '%':  EmitPunct(PPercent, mark); break;
+                case '^':  EmitPunct(PCaret, mark); break;
+                case '+':  EmitPunct(PPlus, mark); break;
+                case '-':  EmitPunct(PMinus, mark); break;
+                case ',':  EmitPunct(PComma, mark); break;
+                case ':':  EmitPunct(PColon, mark); break;
+                case '.':  EmitPunct(PDot, mark); break;
+                case '/':  EmitPunct(PSlash, mark); break;
+                // ! !=
+                case '!': EmitPunct('=', PBangEqual, PBang, mark); break;
+                // & &&
+                case '&': EmitPunct('&', PAndAnd, PAnd, mark); break;
+                // | ||
+                case '|': EmitPunct('|', POrOr, POr, mark); break;
+                // < <=
+                case '<': EmitPunct('=', PLessEqual, PLess, mark); break;
+                // = ==
+                case '=': EmitPunct('=', PEqualEqual, PEqual, mark); break;
+                // > >=
+                case '>': EmitPunct('=', PGreaterEqual, PGreater, mark); break;
 
-    private Token? NextWhitespace()
-    {
-        _ = _cursor.NextWhile(RuneOps.IsWhitespace);
-        return null;
-    }
+                #endregion Punctuation
 
-    private Token? NextNewlineOrComment(Cursor.Mark startMark)
-    {
-        Debug.Assert(_cursor.IsEmpty || RuneOps.IsNewline(_cursor.Peek));
+                default: {
+                    if (RuneOps.IsNameStart(c)) {
+                        EmitName();
+                    }
+                    else {
+                        EmitInvalid();
+                    }
 
-        while (!_cursor.IsEmpty) {
-            _ = _cursor.NextWhile(RuneOps.IsIgnorable);
-
-            if (_cursor.Match("--")) {
-                _ = _cursor.NextUntil(RuneOps.IsNewline, OnForbiddenInComment);
-                continue;
+                    break;
+                }
             }
+        }
+    }
 
-            return Token.Newline(_cursor.Locate(startMark));
+    private void EmitIgnorable()
+    {
+        var mark = _cursor.NewMark();
+        var hadNewline = false;
+        while (!_cursor.IsEmpty) {
+            switch (_cursor.Peek) {
+                case Rune(' ' or '\t' or '\u200E' or '\u200F'): {
+                    _cursor.Next();
+                    break;
+                }
+
+                case Rune('\n' or '\r'): {
+                    hadNewline = true;
+                    _cursor.Next();
+                    break;
+                }
+
+                case Rune('-') when _cursor.Match("--"): {
+                    _ = _cursor.NextUntil(RuneOps.IsNewline, OnForbiddenInComment);
+                    break;
+                }
+
+                default: goto end;
+            }
         }
 
-        return null;
+    end:
+        if (hadNewline) {
+            Emit(Token.Newline(_cursor.Locate(mark)));
+        }
     }
 
-    private Token? NextComment(Cursor.Mark startMark)
-    {
-        _ = _cursor.NextUntil(RuneOps.IsNewline, OnForbiddenInComment);
-        return NextNewlineOrComment(startMark);
-    }
-
-    private readonly void OnForbiddenInComment(Rune rune, Loc loc)
+    private void OnForbiddenInComment(Rune rune, Loc loc)
     {
         var message = (rune, Rune.GetUnicodeCategory(rune)) switch {
             (Rune('\u2028' or '\u2029'), _) =>
@@ -132,19 +191,16 @@ public struct Lexer(Source source) : IEnumerable<Token>
             _ => throw new SwitchExpressionException(rune),
         };
 
-        _queue.Enqueue(Token.Invalid(message, loc));
+        Emit(Token.Invalid(message, loc));
     }
 
-    private Token? NextNumber()
+    private void EmitNumber()
     {
         Debug.Assert(_cursor.Check(RuneOps.IsNumberStart));
 
         var mark = _cursor.NewMark();
-
-        if (_cursor.Check(RuneOps.IsSign)) {
-            if (!_cursor.MatchNext(RuneOps.IsDecDigit)) {
-                return NextPunctuation();
-            }
+        if (_cursor.Match(RuneOps.IsSign)) {
+            Debug.Assert(_cursor.Check(RuneOps.IsDecDigit));
         }
 
         var isInvalid = false;
@@ -190,7 +246,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
                     : $"trailing name character in {name}";
 
             isInvalid = true;
-            _queue.Enqueue(
+            Emit(
                 Token.Invalid(
                     hint is not null ? $"{message}; {hint}" : message,
                     _cursor.Locate(suffixMark)
@@ -199,15 +255,16 @@ public struct Lexer(Source source) : IEnumerable<Token>
         }
 
         if (isInvalid) {
-            return null;
+            return;
         }
 
         var text = _cursor.Text(mark);
         var loc = _cursor.Locate(mark);
-        return radix switch {
+        var token = radix switch {
             'f' => Token.Float(text, loc),
             _   => Token.Integer(text, loc),
         };
+        Emit(token);
     }
 
     private (Predicate<Rune>, char) Radix()
@@ -231,7 +288,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
             var digitMark = _cursor.NewMark();
             if (!_cursor.NextWhile(isDigit)) {
                 isInvalid = true;
-                _queue.Enqueue(
+                Emit(
                     Token.Invalid(
                         "invalid underscore placement; underscores must be followed by a digit",
                         _cursor.Locate(digitMark)
@@ -241,7 +298,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
         }
     }
 
-    private Token? NextName()
+    private void EmitName()
     {
         Debug.Assert(_cursor.Check(RuneOps.IsNameContinue));
 
@@ -253,7 +310,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
             var continueMark = _cursor.NewMark();
             if (!_cursor.NextWhile(RuneOps.IsNameContinue)) {
                 isInvalid = true;
-                _queue.Enqueue(
+                Emit(
                     Token.Invalid(
                         "invalid hyphen placement; hyphens must be followed by a name character",
                         _cursor.Locate(continueMark)
@@ -267,7 +324,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
         var trailingMark = _cursor.NewMark();
         if (hasFinal && _cursor.NextWhile(RuneOps.IsNameChar)) {
             isInvalid = true;
-            _queue.Enqueue(
+            Emit(
                 Token.Invalid(
                     "trailing characters after name final; did you mean to put a space after the name?",
                     _cursor.Locate(trailingMark)
@@ -278,7 +335,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
         var bidiMark = _cursor.NewMark();
         if (_cursor.Check(RuneOps.IsBidiMark) && _cursor.MatchNext(RuneOps.IsNameChar)) {
             isInvalid = true;
-            _queue.Enqueue(
+            Emit(
                 Token.Invalid(
                     "embedded bidirectional mark in name; spaces must be used to separate names",
                     _cursor.Locate(bidiMark)
@@ -287,23 +344,29 @@ public struct Lexer(Source source) : IEnumerable<Token>
         }
 
         if (isInvalid) {
-            return null;
+            return;
         }
 
         var loc = _cursor.Locate(mark);
 
         var value = _cursor.Text(mark).Normalize(NormalizationForm.FormC);
-        return TokenTag.GetKeyword(value) is {} kw
+        var token = TokenTag.GetKeyword(value) is {} kw
             ? Token.Keyword(kw, loc)
             : Token.Name(value, loc);
+        Emit(token);
     }
 
-    private Token? NextStringStd() =>
-        _cursor.Check("\"\"\"")
-            ? NextStringStdBlock()
-            : NextStringStdLine();
+    private void EmitStringStd()
+    {
+        if (_cursor.Check("\"\"\"")) {
+            EmitStringStdBlock();
+        }
+        else {
+            EmitStringStdLine();
+        }
+    }
 
-    private Token? NextStringStdLine()
+    private void EmitStringStdLine()
     {
         Debug.Assert(_cursor.Check('"'));
 
@@ -340,16 +403,16 @@ public struct Lexer(Source source) : IEnumerable<Token>
                 ? @"newline in string literal; did you mean to place a '\' before the newline to" +
                       " form a line continuation?"
                 : "unclosed string literal";
-            _queue.Enqueue(Token.Invalid(message, _cursor.Locate(mark)));
+            Emit(Token.Invalid(message, _cursor.Locate(mark)));
         }
 
         if (isInvalid) {
-            return null;
+            return;
         }
 
         var text = _cursor.Text(mark);
         var loc = _cursor.Locate(mark);
-        return Token.String(text, loc);
+        Emit(Token.String(text, loc));
     }
 
     private void SkipSingleNewline()
@@ -363,7 +426,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
         }
     }
 
-    private Token? NextStringStdBlock()
+    private void EmitStringStdBlock()
     {
         const string triQuotes = "\"\"\"";
 
@@ -401,19 +464,19 @@ public struct Lexer(Source source) : IEnumerable<Token>
 
         if (!_cursor.Match(triQuotes)) {
             isInvalid = true;
-            _queue.Enqueue(Token.Invalid("unclosed block string literal", _cursor.Locate(mark)));
+            Emit(Token.Invalid("unclosed block string literal", _cursor.Locate(mark)));
         }
 
         if (isInvalid) {
-            return null;
+            return;
         }
 
         var text = _cursor.Text(mark);
         var loc = _cursor.Locate(mark);
-        return Token.String(text, loc);
+        Emit(Token.String(text, loc));
     }
 
-    private readonly void OnForbiddenInStdString(Rune rune, Loc loc)
+    private void OnForbiddenInStdString(Rune rune, Loc loc)
     {
         var message = (rune, Rune.GetUnicodeCategory(rune)) switch {
             (Rune('\u2028' or '\u2029'), _) =>
@@ -430,15 +493,20 @@ public struct Lexer(Source source) : IEnumerable<Token>
             _ => throw new SwitchExpressionException(rune),
         };
 
-        _queue.Enqueue(Token.Invalid(message, loc));
+        Emit(Token.Invalid(message, loc));
     }
 
-    private Token? NextStringRaw() =>
-        _cursor.Check("```")
-            ? NextStringRawBlock()
-            : NextStringRawLine();
+    private void EmitStringRaw()
+    {
+        if (_cursor.Check("```")) {
+            EmitStringRawBlock();
+        }
+        else {
+            EmitStringRawLine();
+        }
+    }
 
-    private Token? NextStringRawLine()
+    private void EmitStringRawLine()
     {
         Debug.Assert(_cursor.Check('`'));
 
@@ -455,20 +523,20 @@ public struct Lexer(Source source) : IEnumerable<Token>
                 ? "newline in raw string literal"
                 : "unclosed raw string literal";
 
-            _queue.Enqueue(Token.Invalid(message, _cursor.Locate(mark)));
-            return null;
+            Emit(Token.Invalid(message, _cursor.Locate(mark)));
+            return;
         }
 
         if (stopReason == Cursor.StopReason.Forbidden) {
-            return null;
+            return;
         }
 
         var text = _cursor.Text(mark);
         var loc = _cursor.Locate(mark);
-        return Token.String(text, loc);
+        Emit(Token.String(text, loc));
     }
 
-    private Token? NextStringRawBlock()
+    private void EmitStringRawBlock()
     {
         const string triQuotes = "```";
 
@@ -485,21 +553,21 @@ public struct Lexer(Source source) : IEnumerable<Token>
 
         if (!_cursor.Match(triQuotes)) {
             isInvalid = true;
-            _queue.Enqueue(
+            Emit(
                 Token.Invalid("unclosed raw block string literal", _cursor.Locate(mark))
             );
         }
 
         if (isInvalid) {
-            return null;
+            return;
         }
 
         var text = _cursor.Text(mark);
         var loc = _cursor.Locate(mark);
-        return Token.String(text, loc);
+        Emit(Token.String(text, loc));
     }
 
-    private readonly void OnForbiddenInRawString(Rune rune, Loc loc)
+    private void OnForbiddenInRawString(Rune rune, Loc loc)
     {
         var message = (rune, Rune.GetUnicodeCategory(rune)) switch {
             (Rune('\u2028' or '\u2029'), _) =>
@@ -514,64 +582,25 @@ public struct Lexer(Source source) : IEnumerable<Token>
             _ => throw new SwitchExpressionException(rune),
         };
 
-        _queue.Enqueue(Token.Invalid(message, loc));
+        Emit(Token.Invalid(message, loc));
     }
 
-    private Token NextPunctuation()
+    private void EmitPunct(TokenTag tag, Cursor.Mark mark)
     {
-        Debug.Assert(_cursor.Check(RuneOps.IsPunctuation));
-
-        var mark = _cursor.NewMark();
-        var c = _cursor.Peek;
         _cursor.Next();
-
-        TokenTag? tag = c switch {
-            Rune('(')  => TokenTag.PParenOpen,
-            Rune(')')  => TokenTag.PParenClose,
-            Rune('[')  => TokenTag.PBracketOpen,
-            Rune(']')  => TokenTag.PBracketClose,
-            Rune('{')  => TokenTag.PBraceOpen,
-            Rune('}')  => TokenTag.PBraceClose,
-            Rune('*')  => TokenTag.PStar,
-            Rune('\\') => TokenTag.PBackslash,
-            Rune('%')  => TokenTag.PPercent,
-            Rune('^')  => TokenTag.PCaret,
-            Rune('+')  => TokenTag.PPlus,
-            Rune('-')  => TokenTag.PMinus,
-            Rune(',')  => TokenTag.PComma,
-            Rune(':')  => TokenTag.PColon,
-            Rune('.')  => TokenTag.PDot,
-            Rune('/')  => TokenTag.PSlash,
-
-            // ! !=
-            Rune('!') => _cursor.Match('=') ? TokenTag.PBangEqual : TokenTag.PBang,
-
-            // & &&
-            Rune('&') => _cursor.Match('&') ? TokenTag.PAndAnd : null,
-
-            // | ||
-            Rune('|') => _cursor.Match('|') ? TokenTag.POrOr : TokenTag.POr,
-
-            // < <=
-            Rune('<') => _cursor.Match('=') ? TokenTag.PLessEqual : TokenTag.PLess,
-
-            // = ==
-            Rune('=') => _cursor.Match('=') ? TokenTag.PEqualEqual : TokenTag.PEqual,
-
-            // > >=
-            Rune('>') => _cursor.Match('=') ? TokenTag.PGreaterEqual : TokenTag.PGreater,
-
-            _ => null,
-        };
-
-        var loc = _cursor.Locate(mark);
-
-        return tag is {} it
-            ? Token.Punctuation(it, loc)
-            : Token.Invalid($"invalid punctuation '{Rune.Escape(c)}'", loc);
+        Emit(Token.Punctuation(tag, _cursor.Locate(mark)));
     }
 
-    private Token NextInvalid()
+    private void EmitPunct(char secondChar, TokenTag ifMatch, TokenTag ifNot, Cursor.Mark mark)
+    {
+        _cursor.Next();
+        var token = _cursor.Match(secondChar)
+            ? Token.Punctuation(ifMatch, _cursor.Locate(mark))
+            : Token.Punctuation(ifNot, _cursor.Locate(mark));
+        Emit(token);
+    }
+
+    private void EmitInvalid()
     {
         var mark = _cursor.NewMark();
         var c = _cursor.Peek;
@@ -591,29 +620,27 @@ public struct Lexer(Source source) : IEnumerable<Token>
             (_, UnicodeCategory.Surrogate) =>
                 "unexpected surrogate; maybe the source file is not UTF-8?",
 
+            _ when RuneOps.IsPunctuation(c) => $"invalid punctuation '{c}'",
+
             _ => $"unexpected character {Rune.Escape(c)}",
         };
 
-        return Token.Invalid(message, _cursor.Locate(mark));
+        Emit(Token.Invalid(message, _cursor.Locate(mark)));
     }
 
-    #region Enumerable implementation
-
-    public IEnumerator<Token> GetEnumerator()
+    private void EmitEnd()
     {
-        Token token;
-        do {
-            token = Next();
-            yield return token;
-        } while (token.Tag != TokenTag.End);
+        Emit(Token.End(_cursor.Locate()));
     }
 
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-    #endregion
+    [SuppressMessage("Style", "IDE0251:Make member \'readonly\'")]
+    private void Emit(Token token)
+    {
+        tokens.Add(token);
+    }
 }
 
-internal struct Cursor(Source source)
+file struct Cursor(Source source)
 {
     public enum StopReason
     {
@@ -671,6 +698,16 @@ internal struct Cursor(Source source)
     [Pure]
     public readonly bool CheckNot(string expected) => !IsEmpty && !Check(expected);
 
+    [Pure]
+    public readonly bool CheckNext([RequireStaticDelegate] Predicate<Rune> predicate)
+    {
+        var next = _index + Peek.Utf16SequenceLength;
+        return
+            next < source.Length &&
+            Rune.TryGetRuneAt(source.Body, next, out var c) &&
+            predicate(c);
+    }
+
     [MustUseReturnValue]
     public bool Match([RequireStaticDelegate] Predicate<Rune> predicate)
     {
@@ -705,18 +742,6 @@ internal struct Cursor(Source source)
         else {
             return false;
         }
-    }
-
-    [MustUseReturnValue]
-    public bool MatchSeq(int count, [RequireStaticDelegate] Predicate<Rune> predicate)
-    {
-        for (var i = 0; i < count; ++i) {
-            if (!Match(predicate)) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     [MustUseReturnValue]

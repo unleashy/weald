@@ -28,6 +28,7 @@ public enum TokenTag : byte
     PBraceClose,
     PStar,
     PBackslash,
+    PAnd,
     PAndAnd,
     PPercent,
     PCaret,

@@ -1,1 +1,2 @@
-﻿Token.End@9:0
+﻿Token.Newline@0:9
+Token.End@9:0
