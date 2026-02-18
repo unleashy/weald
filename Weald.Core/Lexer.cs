@@ -135,7 +135,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
         _queue.Enqueue(Token.Invalid(message, loc));
     }
 
-    private Token NextNumber()
+    private Token? NextNumber()
     {
         Debug.Assert(_cursor.Check(RuneOps.IsNumberStart));
 
@@ -147,23 +147,23 @@ public struct Lexer(Source source) : IEnumerable<Token>
             }
         }
 
-        var validUnderscores = true;
+        var isInvalid = false;
 
         var (isDigit, radix) = Radix();
-        Digits(isDigit, ref validUnderscores);
+        Digits(isDigit, ref isInvalid);
 
         if (radix == 'd') {
             if (_cursor.Check('.') && _cursor.MatchNext(RuneOps.IsDecDigit)) {
                 radix = 'f';
 
-                Digits(isDigit, ref validUnderscores);
+                Digits(isDigit, ref isInvalid);
             }
 
             if (_cursor.Check('e') && _cursor.MatchNext(RuneOps.IsNumberStart)) {
                 radix = 'f';
 
                 _ = _cursor.Match(RuneOps.IsSign);
-                Digits(isDigit, ref validUnderscores);
+                Digits(isDigit, ref isInvalid);
             }
         }
 
@@ -171,8 +171,6 @@ public struct Lexer(Source source) : IEnumerable<Token>
 
         var suffixMark = _cursor.NewMark();
         var hasNameSuffix = _cursor.NextWhile(RuneOps.IsNameChar);
-
-        var loc = _cursor.Locate(mark);
 
         if (hasNameSuffix) {
             var firstSuffix = _cursor.Text(suffixMark).EnumerateRunes().First();
@@ -191,20 +189,21 @@ public struct Lexer(Source source) : IEnumerable<Token>
                     ? $"trailing digit of incorrect base in {name}"
                     : $"trailing name character in {name}";
 
-            return Token.Invalid(
-                hint is not null ? $"{message}; {hint}" : message,
-                loc
+            isInvalid = true;
+            _queue.Enqueue(
+                Token.Invalid(
+                    hint is not null ? $"{message}; {hint}" : message,
+                    _cursor.Locate(suffixMark)
+                )
             );
         }
 
-        if (!validUnderscores) {
-            return Token.Invalid(
-                $"invalid underscore placement in {name}; underscores must be followed by a digit",
-                loc
-            );
+        if (isInvalid) {
+            return null;
         }
 
-        var text  = _cursor.Text(mark);
+        var text = _cursor.Text(mark);
+        var loc = _cursor.Locate(mark);
         return radix switch {
             'f' => Token.Float(text, loc),
             _   => Token.Integer(text, loc),
@@ -224,56 +223,74 @@ public struct Lexer(Source source) : IEnumerable<Token>
         return (RuneOps.IsDecDigit, 'd');
     }
 
-    private void Digits(Predicate<Rune> isDigit, ref bool validUnderscores)
+    private void Digits(Predicate<Rune> isDigit, ref bool isInvalid)
     {
         _ = _cursor.NextWhile(isDigit);
 
         while (_cursor.Match('_')) {
+            var digitMark = _cursor.NewMark();
             if (!_cursor.NextWhile(isDigit)) {
-                validUnderscores = false;
+                isInvalid = true;
+                _queue.Enqueue(
+                    Token.Invalid(
+                        "invalid underscore placement; underscores must be followed by a digit",
+                        _cursor.Locate(digitMark)
+                    )
+                );
             }
         }
     }
 
-    private Token NextName()
+    private Token? NextName()
     {
         Debug.Assert(_cursor.Check(RuneOps.IsNameContinue));
 
         var mark = _cursor.NewMark();
         _ = _cursor.NextWhile(RuneOps.IsNameContinue);
 
-        var validHyphens = true;
+        var isInvalid = false;
         while (_cursor.Match(RuneOps.IsNameMedial)) {
+            var continueMark = _cursor.NewMark();
             if (!_cursor.NextWhile(RuneOps.IsNameContinue)) {
-                validHyphens = false;
+                isInvalid = true;
+                _queue.Enqueue(
+                    Token.Invalid(
+                        "invalid hyphen placement; hyphens must be followed by a name character",
+                        _cursor.Locate(continueMark)
+                    )
+                );
             }
         }
 
         var hasFinal = _cursor.Match(RuneOps.IsNameFinal);
-        var hasTrailing = hasFinal && _cursor.NextWhile(RuneOps.IsNameChar);
+
+        var trailingMark = _cursor.NewMark();
+        if (hasFinal && _cursor.NextWhile(RuneOps.IsNameChar)) {
+            isInvalid = true;
+            _queue.Enqueue(
+                Token.Invalid(
+                    "trailing characters after name final; did you mean to put a space after the name?",
+                    _cursor.Locate(trailingMark)
+                )
+            );
+        }
+
+        var bidiMark = _cursor.NewMark();
+        if (_cursor.Check(RuneOps.IsBidiMark) && _cursor.MatchNext(RuneOps.IsNameChar)) {
+            isInvalid = true;
+            _queue.Enqueue(
+                Token.Invalid(
+                    "embedded bidirectional mark in name; spaces must be used to separate names",
+                    _cursor.Locate(bidiMark)
+                )
+            );
+        }
+
+        if (isInvalid) {
+            return null;
+        }
 
         var loc = _cursor.Locate(mark);
-
-        if (hasTrailing) {
-            return Token.Invalid(
-                "trailing characters after name final; did you mean to put a space after the name?",
-                loc
-            );
-        }
-
-        if (!validHyphens) {
-            return Token.Invalid(
-                "invalid hyphen placement in name; hyphens must be followed by a name character",
-                loc
-            );
-        }
-
-        if (_cursor.Check(RuneOps.IsBidiMark) && _cursor.MatchNext(RuneOps.IsNameChar)) {
-            return Token.Invalid(
-                "embedded bidirectional mark in name; spaces must be used to separate names",
-                loc
-            );
-        }
 
         var value = _cursor.Text(mark).Normalize(NormalizationForm.FormC);
         return TokenTag.GetKeyword(value) is {} kw
@@ -317,13 +334,13 @@ public struct Lexer(Source source) : IEnumerable<Token>
         }
 
         if (!_cursor.Match('"')) {
+            isInvalid = true;
+
             var message = _cursor.Check(RuneOps.IsNewline)
                 ? @"newline in string literal; did you mean to place a '\' before the newline to" +
                       " form a line continuation?"
                 : "unclosed string literal";
-
             _queue.Enqueue(Token.Invalid(message, _cursor.Locate(mark)));
-            return null;
         }
 
         if (isInvalid) {
@@ -383,8 +400,8 @@ public struct Lexer(Source source) : IEnumerable<Token>
         }
 
         if (!_cursor.Match(triQuotes)) {
+            isInvalid = true;
             _queue.Enqueue(Token.Invalid("unclosed block string literal", _cursor.Locate(mark)));
-            return null;
         }
 
         if (isInvalid) {
@@ -467,10 +484,10 @@ public struct Lexer(Source source) : IEnumerable<Token>
         }
 
         if (!_cursor.Match(triQuotes)) {
+            isInvalid = true;
             _queue.Enqueue(
                 Token.Invalid("unclosed raw block string literal", _cursor.Locate(mark))
             );
-            return null;
         }
 
         if (isInvalid) {

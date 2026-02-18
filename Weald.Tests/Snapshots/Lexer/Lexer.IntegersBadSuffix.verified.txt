@@ -1,8 +1,9 @@
-﻿Token.Invalid="trailing name character in integer"@0:2
-Token.Invalid="trailing name character in integer"@3:5
-Token.Invalid="trailing name character in integer; did you mean to put a space after the number?"@9:4
-Token.Invalid="trailing name character in integer; did you mean to put a space after the number?"@14:3
-Token.Invalid="trailing name character in integer"@18:6
-Token.Invalid="trailing name character in integer; did you mean to put a space after the number?"@25:3
-Token.Invalid="trailing digit of incorrect base in integer"@29:6
+﻿Token.Invalid="trailing name character in integer"@1:1
+Token.Invalid="invalid underscore placement; underscores must be followed by a digit"@7:0
+Token.Invalid="trailing name character in integer"@7:1
+Token.Invalid="trailing name character in integer; did you mean to put a space after the number?"@12:1
+Token.Invalid="trailing name character in integer; did you mean to put a space after the number?"@16:1
+Token.Invalid="trailing name character in integer"@23:1
+Token.Invalid="trailing name character in integer; did you mean to put a space after the number?"@27:1
+Token.Invalid="trailing digit of incorrect base in integer"@34:1
 Token.End@35:0

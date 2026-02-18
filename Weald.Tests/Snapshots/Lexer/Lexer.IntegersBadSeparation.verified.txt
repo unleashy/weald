@@ -1,8 +1,10 @@
-﻿Token.Invalid="invalid underscore placement in integer; underscores must be followed by a digit"@0:4
-Token.Invalid="invalid underscore placement in integer; underscores must be followed by a digit"@5:4
-Token.Invalid="invalid underscore placement in integer; underscores must be followed by a digit"@10:12
-Token.Invalid="invalid underscore placement in integer; underscores must be followed by a digit"@23:5
-Token.Invalid="invalid underscore placement in integer; underscores must be followed by a digit"@29:8
-Token.Invalid="invalid underscore placement in integer; underscores must be followed by a digit"@38:5
-Token.Invalid="invalid underscore placement in integer; underscores must be followed by a digit"@44:8
+﻿Token.Invalid="invalid underscore placement; underscores must be followed by a digit"@2:0
+Token.Invalid="invalid underscore placement; underscores must be followed by a digit"@8:0
+Token.Invalid="invalid underscore placement; underscores must be followed by a digit"@9:0
+Token.Invalid="invalid underscore placement; underscores must be followed by a digit"@19:0
+Token.Invalid="invalid underscore placement; underscores must be followed by a digit"@20:0
+Token.Invalid="invalid underscore placement; underscores must be followed by a digit"@26:0
+Token.Invalid="invalid underscore placement; underscores must be followed by a digit"@34:0
+Token.Invalid="invalid underscore placement; underscores must be followed by a digit"@41:0
+Token.Invalid="invalid underscore placement; underscores must be followed by a digit"@49:0
 Token.End@52:0

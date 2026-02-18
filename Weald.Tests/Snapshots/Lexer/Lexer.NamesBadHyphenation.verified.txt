@@ -1,5 +1,6 @@
-﻿Token.Invalid="invalid hyphen placement in name; hyphens must be followed by a name character"@0:4
-Token.Invalid="invalid hyphen placement in name; hyphens must be followed by a name character"@5:6
-Token.Invalid="invalid hyphen placement in name; hyphens must be followed by a name character"@12:3
-Token.Invalid="invalid hyphen placement in name; hyphens must be followed by a name character"@16:4
+﻿Token.Invalid="invalid hyphen placement; hyphens must be followed by a name character"@4:0
+Token.Invalid="invalid hyphen placement; hyphens must be followed by a name character"@11:0
+Token.Invalid="invalid hyphen placement; hyphens must be followed by a name character"@14:0
+Token.Invalid="invalid hyphen placement; hyphens must be followed by a name character"@15:0
+Token.Invalid="invalid hyphen placement; hyphens must be followed by a name character"@18:0
 Token.End@21:0

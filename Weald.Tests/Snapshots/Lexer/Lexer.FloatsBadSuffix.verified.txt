@@ -1,5 +1,5 @@
-﻿Token.Invalid="trailing name character in float"@0:6
-Token.Invalid="trailing name character in float; are you missing a float exponent?"@7:6
-Token.Invalid="trailing name character in float; did you mean to put a space after the number?"@14:6
-Token.Invalid="trailing name character in float; did you mean to use 'e' instead?"@21:6
+﻿Token.Invalid="trailing name character in float"@4:2
+Token.Invalid="trailing name character in float; are you missing a float exponent?"@12:1
+Token.Invalid="trailing name character in float; did you mean to put a space after the number?"@19:1
+Token.Invalid="trailing name character in float; did you mean to use 'e' instead?"@26:1
 Token.End@27:0
