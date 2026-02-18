@@ -1,7 +1,7 @@
 ---
 ◊meta:
   title: Weald 🌳 Language Specification
-  version: 0.2.0
+  version: 0.3.0
 ---
 Introduction:
   - >
@@ -449,30 +449,39 @@ Lexical elements:
         reserved for future use; this is a profile of
         ◊[UAX-R3b-1][https://www.unicode.org/reports/tr31/#R3b].
 ---
-Expressions:
-  - ◊syn:
-      ◊caption: expressions
-      Expr: ExprConditional
+Syntax:
   - >
-    This chapter covers expressions, the main syntactical unit of Weald. Every expression can be
-    ◊i[evaluated], producing a result. The result ◊i[denotes] a value of some type. During
-    evaluation, zero or more ◊i[side effects] may be produced.
+    This chapter covers the syntax of Weald. There are two main groups of syntactical elements:
+    declarations and expressions. Whilst declarations put new entities such as variables and
+    functions into scope, expressions do the actual work of computation.
 
-    Expressions can be divided into four groups:
-  - ◊ul:
-      - Primary expressions;
-      - Unary operators;
-      - Binary operators; and
-      - Conditional expressions.
-  - >
-    These can be nested pretty much freely within each other. As such, expression syntax is highly
-    recursive. To express the ◊i[precedence] of the various expression forms, a hierarchy of syntax
-    productions is used: the topmost ◊syn[Expr] production has the lowest precedence, and
-    productions within these productions have the second-lowest precedence, and so on.
+  - Optional newlines:
+      - ◊syn:
+          ◊caption: optional newlines
+          NL: Newline*
+      - >
+        To allow free-form syntax, the grammar allows optional newlines in strategic locations,
+        usually next to terminals. To separate statements, newlines are required.
 
-    Expressions may have zero or more ◊i[operands], defined by the forms themselves. Those operands
-    are used in evaluating an expression at run-time and also for typechecking an expression at
-    compile time.
+  - Expressions:
+      - ◊syn:
+          ◊caption: expressions
+          Expr: ExprLogic
+      - >
+        Every expression can be ◊i[evaluated], producing a result. The result ◊i[denotes] a value of
+        some type. During evaluation, zero or more ◊i[side effects] may be produced.
+
+        Expressions can be divided into three groups: primary expressions, unary operators, and
+        binary operators.
+
+        These can be nested pretty much freely within each other. As such, expression syntax is
+        highly recursive. To express the ◊i[precedence] of the various expression forms, a hierarchy
+        of syntax productions is used: the topmost ◊syn[Expr] production has the lowest precedence,
+        and productions within these productions have the second-lowest precedence, and so on.
+
+        Expressions may have zero or more ◊i[operands], defined by the forms themselves. Those
+        operands are used in evaluating an expression at run-time and also for typechecking an
+        expression at compile time.
 
   - Primary expressions:
       - ◊syn:
@@ -480,9 +489,11 @@ Expressions:
           ExprPrimary:
             - Literal
             - Group
+            - Block
+            - If
       - >
-        Primary expressions are the simplest form of expressions: literals and groups. They have the
-        highest precedence possible.
+        Primary expressions are the highest-precedence level of expressions: literals, groups, and
+        block expressions.
 
       - Literals:
           - ◊syn:
@@ -501,20 +512,47 @@ Expressions:
           - ◊syn:
               ◊caption: groups
               Group:
-                - "`(` Expr `)`"
+                - "`(` NL Expr NL `)`"
           - >
             Groups (also called parenthesised expressions) allow “breaking out” of normal precedence
             by inserting an expression in a high-precedence context. Their value and type are the
             exact same as the expression they contain.
+
+      - Blocks:
+          - ◊syn:
+              ◊caption: blocks
+              Block: "`{` NL Stmts NL `}`"
+          - >
+            Blocks are a type of expression that allows expressions to contain ◊[statements] by
+            grouping them within braces.
+
+      - If expressions:
+          - ◊syn:
+              ◊caption: if expressions
+              If:
+                - "`if` NL Expr NL Block NL Else?"
+                - "`if` NL Expr NL `?` NL Expr NL `:` NL Expr"
+              Else:
+                - "`else` NL Block"
+                - "`else` NL If"
+          - >
+            If expressions direct control flow depending on the result of a condition.
+
+            ◊b[Ternary form.] This is meant to reduce the syntax weight of simpler conditionals.
+            When using this form, it is an error if any of the nested expressions contain a block.
+
+          - ◊note: >
+              This means something like ◊code[if x ? { things } : { more things }] is an error. This
+              is meant to discourage overly complex ternary conditionals.
 
   - Unary operations:
       - ◊syn:
           ◊caption: unary operations
           ExprUnary:
             - ExprPrimary
-            - "`!` Expr"
-            - "`-` Expr"
-            - "`+` Expr"
+            - "`!` NL Expr"
+            - "`-` NL Expr"
+            - "`+` NL Expr"
       - >
         The unary operations are composed of an ◊syn[Expr] operand and an associated operator; the
         operators are not ◊tt[!], minus ◊tt[-], and plus ◊tt[+]. The operators all have the same
@@ -524,50 +562,51 @@ Expressions:
       - ◊syn:
           ◊caption: exponentiation
           ExprPower:
-            - ExprUnary `^` ExprPower
+            - ExprUnary NL `^` NL ExprPower
             - ExprUnary
       - >
-        The exponentiation operation is a right-associative operation.
+        The exponentiation operation is a binary, right-associative operation.
 
   - Multiplicative operations:
       - ◊syn:
           ◊caption: multiplicative operations
           ExprMul:
-            - ExprMul `*` ExprPower
-            - ExprMul `/` ExprPower
-            - ExprMul `%` ExprPower
+            - ExprMul NL `*` NL ExprPower
+            - ExprMul NL `/` NL ExprPower
+            - ExprMul NL `%` NL ExprPower
             - ExprPower
       - >
         The multiplicative operations comprise the multiplication ◊tt[*], division ◊tt[/], and
-        modulo ◊tt[%] operators. They are all left-associative and have the same precedence.
+        modulo ◊tt[%] operators. They are all binary, left-associative, and have the same
+        precedence.
 
   - Additive operations:
       - ◊syn:
           ◊caption: additive operations
           ExprAdd:
-            - ExprAdd `+` ExprMul
-            - ExprAdd `-` ExprMul
+            - ExprAdd NL `+` NL ExprMul
+            - ExprAdd NL `-` NL ExprMul
             - ExprMul
       - >
         The additive operations comprise the add ◊tt[+] and subtract ◊tt[-], operators. They are
-        both left-associative and have the same precedence.
+        both binary, left-associative, and have the same precedence.
 
   - Comparison operations:
       - ◊syn:
           ◊caption: comparison operations
           ExprCmp:
-            - ExprAdd `==` ExprAdd
-            - ExprAdd `!=` ExprAdd
-            - ExprAdd `<` ExprAdd
-            - ExprAdd `<=` ExprAdd
-            - ExprAdd `>` ExprAdd
-            - ExprAdd `>=` ExprAdd
+            - ExprAdd NL `==` NL ExprAdd
+            - ExprAdd NL `!=` NL ExprAdd
+            - ExprAdd NL `<`  NL ExprAdd
+            - ExprAdd NL `<=` NL ExprAdd
+            - ExprAdd NL `>`  NL ExprAdd
+            - ExprAdd NL `>=` NL ExprAdd
             - ExprAdd
       - >
         The comparison operations comprise the equality ◊tt[==], inequality ◊tt[!=], less than
         ◊tt[<], less than or equal to ◊tt[<=], greater than ◊tt[>], and greater than or equal to
-        ◊tt[>=] operators. They are non-associative (you cannot chain them together without using
-        parentheses) and have the same precedence.
+        ◊tt[>=] operators. They are binary, non-associative (you cannot chain them together without
+        using parentheses), and have the same precedence.
 
   - Logical operations:
       - ◊syn:
@@ -576,9 +615,27 @@ Expressions:
             - ExprAnd
             - ExprOr
             - ExprCmp
-          ExprAnd: ExprAnd `&&` ExprCmp
-          ExprOr: ExprOr `||` ExprCmp
+          ExprAnd: ExprAnd NL `&&` NL ExprCmp
+          ExprOr: ExprOr  NL `||` NL ExprCmp
       - >
         The lazy logical operations comprise the logical and ◊tt[&&] and logical or ◊tt[||]
-        operators. They are left-associative and have the same precedence, but you cannot chain
-        ◊tt[&&] with ◊tt[||] (or vice versa) together without using parentheses.
+        operators. They are binary, left-associative, and have the same precedence, but you cannot
+        chain ◊tt[&&] with ◊tt[||] (or vice versa) together without using parentheses.
+
+  - Statements:
+      - ◊syn:
+          ◊caption: statements
+          Stmts: Stmt (Newline+ Stmt)*
+          Stmt:
+            - Decl
+            - Block
+            - If
+      - >
+        Statements are one of: ◊[declarations], ◊[blocks], or ◊[if expressions].
+
+  - Declarations:
+      - ◊syn:
+          ◊caption: declarations
+          Decl:
+            - "`let` NL Name NL `=` NL Expr"
+      - A declaration puts a new name into scope, with a defined value.
