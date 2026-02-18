@@ -143,13 +143,16 @@ public class LexerTests : BaseTest
     public Task NamesBadHyphenation() => Verify("abc- _-123- x-- _--_ ");
 
     [Test]
-    public Task NamesUnicode() => Verify("おやすみなさい a山b 本-ℹ देवनागरी?");
+    public Task NamesUnicode() => Verify("おやすみなさい a山b 本-ℹ देवनागरी? قهوة‏‎");
 
     [Test]
     public Task NamesOverlongFinal() => Verify("foo?? bar!? bux?! baz!!");
 
     [Test]
     public Task Keywords() => Verify("_ false true");
+
+    [Test]
+    public Task NamesEmbeddedBidi() => Verify("foo\u200Ebar else\u200Fif");
 
     [Test]
     public void NamesAreNormalised()

@@ -1,0 +1,5 @@
+﻿Token.Invalid="embedded bidirectional mark in name; spaces must be used to separate names"@0:3
+Token.Name="bar"@4:3
+Token.Invalid="embedded bidirectional mark in name; spaces must be used to separate names"@8:4
+Token.Name="if"@13:2
+Token.End@15:0

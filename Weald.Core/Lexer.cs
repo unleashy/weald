@@ -270,6 +270,13 @@ public struct Lexer(Source source) : IEnumerable<Token>
             );
         }
 
+        if (_cursor.Check(RuneOps.IsBidiMark) && _cursor.MatchNext(RuneOps.IsNameChar)) {
+            return Token.Invalid(
+                "embedded bidirectional mark in name; spaces must be used to separate names",
+                loc
+            );
+        }
+
         var value = _cursor.Text(mark).Normalize(NormalizationForm.FormC);
         return TokenTag.GetKeyword(value) is {} kw
             ? Token.Keyword(kw, loc)

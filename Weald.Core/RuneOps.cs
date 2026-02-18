@@ -15,7 +15,10 @@ internal static class RuneOps
     public static bool IsIgnorable(Rune rune) => IsWhitespace(rune) || IsNewline(rune);
 
     [Pure]
-    public static bool IsWhitespace(Rune rune) => rune is Rune(' ' or '\t' or '\u200E' or '\u200F');
+    public static bool IsBidiMark(Rune rune) => rune is Rune('\u200E' or '\u200F');
+
+    [Pure]
+    public static bool IsWhitespace(Rune rune) => rune is Rune(' ' or '\t') || IsBidiMark(rune);
 
     [Pure]
     public static bool IsNewline(Rune rune) => rune is Rune('\n' or '\r');
