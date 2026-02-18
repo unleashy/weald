@@ -279,8 +279,9 @@ public class LexerTests : BaseTest
     public void StringsStd()
     {
         StringWithEscapes.Sample(sut => {
-            AssertLex($"\"{sut}\"",
-                $"Token.String=\"{sut}\"@0:{sut.Length + 2}",
+            var input = $"\"{sut}\"";
+            AssertLex(input,
+                $"Token.String={input.Escape()}@0:{sut.Length + 2}",
                 $"Token.End@{sut.Length + 2}:0"
             );
         });
@@ -332,7 +333,6 @@ public class LexerTests : BaseTest
         "foo\
         bar"
         "baz\
-
                      bux"
         """
     );
@@ -347,8 +347,9 @@ public class LexerTests : BaseTest
     public void StringsRaw()
     {
         StringRaw.Sample(sut => {
-            AssertLex($"`{sut}`",
-                $"Token.String={sut.Escape()}@0:{sut.Length + 2}",
+            var input = $"`{sut}`";
+            AssertLex(input,
+                $"Token.String={input.Escape()}@0:{sut.Length + 2}",
                 $"Token.End@{sut.Length + 2}:0"
             );
         });

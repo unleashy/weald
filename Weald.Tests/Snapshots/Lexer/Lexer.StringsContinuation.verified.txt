@@ -1,4 +1,4 @@
-﻿Token.String="foobar"@0:10
+﻿Token.String="\"foo\\\nbar\""@0:10
 Token.Newline@10:1
-Token.String="bazbux"@11:24
-Token.End@35:0
+Token.String="\"baz\\\n             bux\""@11:23
+Token.End@34:0

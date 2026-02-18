@@ -1,20 +1,9 @@
-﻿Token.Invalid="unrecognised escape sequence '\\a'"@1:2
-Token.Invalid="unrecognised escape sequence '\\b'"@6:2
-Token.Invalid="unrecognised escape sequence '\\c'"@8:2
-Token.Invalid="unrecognised escape sequence '\\{'"@13:2
-Token.Invalid="invalid \\x escape sequence; expected exactly 2 hexadecimal digits"@17:2
-Token.Invalid="invalid \\x escape sequence; expected exactly 2 hexadecimal digits"@22:2
-Token.Invalid="invalid \\x escape sequence; expected exactly 2 hexadecimal digits"@29:3
-Token.Invalid="invalid \\u escape sequence; expected exactly 4 hexadecimal digits"@36:2
-Token.Invalid="invalid \\u escape sequence; expected exactly 4 hexadecimal digits"@38:3
-Token.Invalid="invalid \\u escape sequence; expected exactly 4 hexadecimal digits"@41:4
-Token.Invalid="invalid \\u escape sequence; expected exactly 4 hexadecimal digits"@45:5
-Token.Invalid="invalid \\u escape sequence; expected exactly 4 hexadecimal digits"@50:5
-Token.Invalid="invalid \\u escape sequence; expected exactly 4 hexadecimal digits"@56:2
+﻿Token.String="\"\\a\""@0:4
+Token.String="\"\\b\\c\""@5:6
+Token.String="\"\\{\\\\\\x\""@12:8
+Token.String="\"\\xzx\""@21:6
+Token.String="\"\\xaZ\""@28:6
+Token.String="\"\\u\\u0\\u00\\u000\\u000g\\ug0065\""@35:29
 Token.Newline@64:1
-Token.Invalid="invalid empty \\u{} escape sequence"@66:4
-Token.Invalid="invalid \\u{} escape sequence; 'ffffff' is not a Unicode code point"@70:10
-Token.Invalid="unclosed \\u{} escape sequence; expected a '}' after at most 6 hexadecimal digits"@80:7
-Token.Invalid="unclosed \\u{} escape sequence; expected a '}' after at most 6 hexadecimal digits"@87:3
-Token.Invalid="invalid \\u escape sequence; expected exactly 4 hexadecimal digits"@92:2
+Token.String="\"\\u{}\\u{ffffff}\\u{0065\\u{x}\\u}\""@65:31
 Token.End@96:0
