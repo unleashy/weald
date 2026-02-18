@@ -34,7 +34,6 @@ public readonly record struct LineColumn
     }
 
     [Pure]
-    [MustUseReturnValue]
     public static LineColumn FromIndex(string text, int index)
     {
         Debug.Assert(0 <= index, "index must be greater than or equal to 0");
@@ -53,7 +52,6 @@ public readonly record struct LineColumn
     }
 
     [Pure]
-    [MustUseReturnValue]
     public static Range FromLoc(string text, Loc loc) =>
         new() {
             Start = FromIndex(text, loc.Start),
