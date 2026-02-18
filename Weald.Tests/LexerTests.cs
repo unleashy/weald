@@ -183,7 +183,7 @@ public class LexerTests : BaseTest
     {
         IntegerDec.Sample(sut => {
             AssertLex(sut,
-                $"Token.Integer/Dec={sut.Escape()}@0:{sut.Length}",
+                $"Token.Integer={sut.Escape()}@0:{sut.Length}",
                 $"Token.End@{sut.Length}:0"
             );
         });
@@ -200,9 +200,8 @@ public class LexerTests : BaseTest
             .Select((sign, first, rest) => sign + "0x" + first + rest)
             .Where(s => !(s.Contains("__", StringComparison.Ordinal) || s.EndsWith('_')))
             .Sample(sut => {
-                var text = sut.Replace("0x", "", StringComparison.Ordinal).Escape();
                 AssertLex(sut,
-                    $"Token.Integer/Hex={text}@0:{sut.Length}",
+                    $"Token.Integer={sut.Escape()}@0:{sut.Length}",
                     $"Token.End@{sut.Length}:0"
                 );
             });
@@ -219,9 +218,8 @@ public class LexerTests : BaseTest
             .Select((sign, first, rest) => sign + "0b" + first + rest)
             .Where(s => !(s.Contains("__", StringComparison.Ordinal) || s.EndsWith('_')))
             .Sample(sut => {
-                var text = sut.Replace("0b", "", StringComparison.Ordinal).Escape();
                 AssertLex(sut,
-                    $"Token.Integer/Bin={text}@0:{sut.Length}",
+                    $"Token.Integer={sut.Escape()}@0:{sut.Length}",
                     $"Token.End@{sut.Length}:0"
                 );
             });

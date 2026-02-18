@@ -207,9 +207,7 @@ public struct Lexer(Source source) : IEnumerable<Token>
         var text  = _cursor.Text(mark);
         return radix switch {
             'f' => Token.Float(text, loc),
-            'x' => Token.HexInteger(text.Replace("0x", "", StringComparison.Ordinal), loc),
-            'b' => Token.BinInteger(text.Replace("0b", "", StringComparison.Ordinal), loc),
-            _   => Token.DecInteger(text, loc),
+            _   => Token.Integer(text, loc),
         };
     }
 
