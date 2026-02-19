@@ -561,8 +561,8 @@ Syntax:
   - Exponentiation operation:
       - ◊syn:
           ◊caption: exponentiation
-          ExprPower:
-            - ExprUnary NL `^` NL ExprPower
+          ExprPow:
+            - ExprUnary NL `^` NL ExprPow
             - ExprUnary
       - >
         The exponentiation operation is a binary, right-associative operation.
@@ -571,10 +571,10 @@ Syntax:
       - ◊syn:
           ◊caption: multiplicative operations
           ExprMul:
-            - ExprMul NL `*` NL ExprPower
-            - ExprMul NL `/` NL ExprPower
-            - ExprMul NL `%` NL ExprPower
-            - ExprPower
+            - ExprMul NL `*` NL ExprPow
+            - ExprMul NL `/` NL ExprPow
+            - ExprMul NL `%` NL ExprPow
+            - ExprPow
       - >
         The multiplicative operations comprise the multiplication ◊tt[*], division ◊tt[/], and
         modulo ◊tt[%] operators. They are all binary, left-associative, and have the same
