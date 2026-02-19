@@ -20,29 +20,20 @@ public sealed class AstPrinter
 
     private void Visit(IAst ast, string indent)
     {
-        var nodeTy = ast.GetType();
+        var (name, props) = GetPrinterData(ast);
 
-        AppendLine(indent, $"@ {nodeTy.Name} (location: {ast.Loc})");
+        AppendLine(indent, $"@ {name} (location: {ast.Loc})");
 
-        var properties =
-            nodeTy
-                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Where(p => p.Name != "Loc")
-                .ToArray();
+        for (var i = 0; i < props.Length; ++i) {
+            var (propName, value) = props[i];
+            var isLast = i == props.Length - 1;
 
-        for (var i = 0; i < properties.Length; ++i) {
-            var property = properties[i];
-            var isLast = i == properties.Length - 1;
-            var value = property.GetValue(ast);
-
-            PrintProperty(property, value, isLast, indent);
+            PrintProperty(propName, value, isLast, indent);
         }
     }
 
-    private void PrintProperty(PropertyInfo property, object? value, bool isLast, string indent)
+    private void PrintProperty(string name, object? value, bool isLast, string indent)
     {
-        var name = property.Name;
-
         var pointer = isLast ? "└── " : "├── ";
         var continuation = isLast ? "    " : "│   ";
 
@@ -63,7 +54,10 @@ public sealed class AstPrinter
             }
 
             default: {
-                AppendLine(indent, $"{pointer}{name}: {value}");
+                AppendLine(
+                    indent,
+                    string.Create(CultureInfo.InvariantCulture, $"{pointer}{name}: {value}")
+                );
                 break;
             }
         }
@@ -105,4 +99,33 @@ public sealed class AstPrinter
     }
 
     private string Finish() => _s.ToString();
+
+    private static (string Name, (string Name, object? Value)[] Props) GetPrinterData(IAst ast)
+    {
+        var ty = ast.GetType();
+
+        var name = ty.Name.StartsWith("Ast", StringComparison.Ordinal) ? ty.Name[3 ..] : ty.Name;
+
+        var props = ty
+            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(p => p.Name != "Loc")
+            .Select(p => (p.Name, p.GetValue(ast)))
+            .OrderBy(p => p.Name, ByNameWithLocsAtEnd)
+            .ToArray();
+
+        return (name, props);
+    }
+
+    private static readonly Comparer<string> ByNameWithLocsAtEnd =
+        Comparer<string>.Create((a, b) => {
+            var aIsLoc = a.EndsWith("Loc", StringComparison.Ordinal);
+            var bIsLoc = b.EndsWith("Loc", StringComparison.Ordinal);
+
+            if (!(aIsLoc && bIsLoc)) {
+                if (aIsLoc) return +1;
+                if (bIsLoc) return -1;
+            }
+
+            return a.CompareTo(b, StringComparison.Ordinal);
+        });
 }
