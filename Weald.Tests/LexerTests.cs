@@ -21,14 +21,14 @@ public class LexerTests : BaseTest
     private static SettingsTask Verify(string text)
     {
         var source = Source.FromString("", text);
-        var lexer = Lexer.Create(source);
+        var lexer = Lexer.Tokenise(source);
 
         return Verifier.Verify(string.Join('\n', lexer), Settings);
     }
 
     private static void AssertLex(string body, string token, params string[] rest)
     {
-        var lexer = Lexer.Create(Source.FromString("", body));
+        var lexer = Lexer.Tokenise(Source.FromString("", body));
         Assert.That(
             lexer.Select(t => t.ToString()),
             Is.EquivalentTo([token, ..rest]),
@@ -150,7 +150,7 @@ public class LexerTests : BaseTest
     public Task NamesOverlongFinal() => Verify("foo?? bar!? bux?! baz!!");
 
     [Test]
-    public Task Keywords() => Verify("_ false true");
+    public Task Keywords() => Verify("_ false let true");
 
     [Test]
     public Task NamesEmbeddedBidi() => Verify("foo\u200Ebar else\u200Fif");
@@ -159,11 +159,13 @@ public class LexerTests : BaseTest
     public void NamesAreNormalised()
     {
         const string sut = "noe\u0308l-\u212b";
-        var lexer = Lexer.Create(Source.FromString("", sut));
 
-        var actual = lexer.Next();
+        var tokens = Lexer.Tokenise(Source.FromString("", sut));
 
-        Assert.That(actual, Is.EqualTo(Token.Name("noël-Å", Loc.FromLength(0, sut.Length))));
+        Assert.That(tokens, Is.EquivalentTo([
+            Token.Name("noël-Å", Loc.FromLength(0, sut.Length)),
+            Token.End(Loc.FromLength(sut.Length, 0)),
+        ]));
     }
 
     private static readonly Gen<string> NumberSign = Gen.String[Gen.Char["+-"], 0, 1];
@@ -184,7 +186,7 @@ public class LexerTests : BaseTest
     {
         IntegerDec.Sample(sut => {
             AssertLex(sut,
-                $"Token.Integer={sut.Escape()}@0:{sut.Length}",
+                $"Token.Int={sut.Escape()}@0:{sut.Length}",
                 $"Token.End@{sut.Length}:0"
             );
         });
@@ -202,7 +204,7 @@ public class LexerTests : BaseTest
             .Where(s => !(s.Contains("__", StringComparison.Ordinal) || s.EndsWith('_')))
             .Sample(sut => {
                 AssertLex(sut,
-                    $"Token.Integer={sut.Escape()}@0:{sut.Length}",
+                    $"Token.Int={sut.Escape()}@0:{sut.Length}",
                     $"Token.End@{sut.Length}:0"
                 );
             });
@@ -220,7 +222,7 @@ public class LexerTests : BaseTest
             .Where(s => !(s.Contains("__", StringComparison.Ordinal) || s.EndsWith('_')))
             .Sample(sut => {
                 AssertLex(sut,
-                    $"Token.Integer={sut.Escape()}@0:{sut.Length}",
+                    $"Token.Int={sut.Escape()}@0:{sut.Length}",
                     $"Token.End@{sut.Length}:0"
                 );
             });

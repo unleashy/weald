@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Collections.Immutable;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -8,42 +6,15 @@ using static Weald.Core.TokenTag;
 
 namespace Weald.Core;
 
-public sealed class Lexer : IEnumerable<Token>
+public static class Lexer
 {
-    private ImmutableArray<Token> _tokens;
-
     [Pure]
-    public static Lexer Create(Source source)
+    public static ImmutableArray<Token> Tokenise(Source source)
     {
         var tokens = ImmutableArray.CreateBuilder<Token>();
         new Core(source, tokens).Tokenise();
-        return new Lexer(tokens.DrainToImmutable());
+        return tokens.DrainToImmutable();
     }
-
-    private Lexer(ImmutableArray<Token> tokens)
-    {
-        _tokens = tokens;
-    }
-
-    public Token Peek {
-        [Pure]
-        get => _tokens.IsDefaultOrEmpty ? Token.End(default) : _tokens[0];
-    }
-
-    [MustUseReturnValue]
-    public Token Next()
-    {
-        var peek = Peek;
-
-        if (peek.Tag != End) {
-            _tokens = _tokens[1..];
-        }
-
-        return peek;
-    }
-
-    public IEnumerator<Token> GetEnumerator() => ((IEnumerable<Token>)_tokens).GetEnumerator();
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
 
 file struct Core(Source source, ImmutableArray<Token>.Builder tokens)
@@ -633,7 +604,7 @@ file struct Core(Source source, ImmutableArray<Token>.Builder tokens)
         Emit(Token.End(_cursor.Locate()));
     }
 
-    [SuppressMessage("Style", "IDE0251:Make member \'readonly\'")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0251:Make member \'readonly\'")]
     private void Emit(Token token)
     {
         tokens.Add(token);

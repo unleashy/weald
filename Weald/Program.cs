@@ -4,9 +4,9 @@ using Weald.Core;
 Console.WriteLine($"Weald 🌳 v{GetVersion()} // Ctrl+C or .exit to quit");
 Repl(line => {
     var source = Source.FromString("<repl>", line);
-    var lexer = Lexer.Create(source);
+    var tokens = Lexer.Tokenise(source);
 
-    foreach (var token in lexer) {
+    foreach (var token in tokens) {
         Console.WriteLine(token);
     }
 });

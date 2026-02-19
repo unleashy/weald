@@ -6,7 +6,7 @@ public enum TokenTag : byte
     End,
     Newline,
     Name,
-    Integer,
+    Int,
     Float,
     String,
 
@@ -14,6 +14,7 @@ public enum TokenTag : byte
 
     KwDiscard,
     KwFalse,
+    KwLet,
     KwTrue,
 
     #endregion
@@ -62,7 +63,7 @@ public readonly record struct Token(TokenTag Tag, string? Text, Loc Loc)
 
     public static Token Name(string text, Loc loc) => new(TokenTag.Name, text, loc);
 
-    public static Token Integer(string text, Loc loc) => new(TokenTag.Integer, text, loc);
+    public static Token Integer(string text, Loc loc) => new(TokenTag.Int, text, loc);
 
     public static Token Float(string text, Loc loc) => new(TokenTag.Float, text, loc);
 
@@ -102,9 +103,10 @@ public static class TokenTagExtensions
 
         public static TokenTag? GetKeyword(string term) =>
             term switch {
-                "_" => TokenTag.KwDiscard,
+                "_"     => TokenTag.KwDiscard,
                 "false" => TokenTag.KwFalse,
-                "true" => TokenTag.KwTrue,
+                "let"   => TokenTag.KwLet,
+                "true"  => TokenTag.KwTrue,
                 _ => null,
             };
     }
