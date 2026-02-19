@@ -4,10 +4,20 @@ using Weald.Core;
 Console.WriteLine($"Weald 🌳 v{GetVersion()} // Ctrl+C or .exit to quit");
 Repl(line => {
     var source = Source.FromString("<repl>", line);
-    var tokens = Lexer.Tokenise(source);
+    var result = Parser.Parse(Lexer.Tokenise(source));
 
-    foreach (var token in tokens) {
-        Console.WriteLine(token);
+    Console.WriteLine(AstPrinter.Print(result.Ast));
+
+    if (result.HasProblems) {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.Error.WriteLine();
+
+        foreach (var (desc, loc) in result.Problems) {
+            var lc = LineColumn.FromLoc(source.Body, loc);
+            Console.Error.WriteLine($"error: {desc.Message} @ {source.Name}:{lc} [{desc.Id}]");
+        }
+
+        Console.ResetColor();
     }
 });
 

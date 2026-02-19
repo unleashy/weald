@@ -2,8 +2,8 @@
 
 public readonly record struct Loc
 {
-    [NonNegativeValue] public int Start { get; } = 0;
-    [NonNegativeValue] public int Length { get; } = 0;
+    [NonNegativeValue] public int Start { get; init; } = 0;
+    [NonNegativeValue] public int Length { get; init; } = 0;
 
     [Pure]
     public static Loc FromLength(int start, int length)
@@ -31,4 +31,11 @@ public readonly record struct Loc
     }
 
     public override string ToString() => $"{Start}:{Length}";
+
+    public static Loc Join(Loc a, Loc b)
+    {
+        var start = int.Min(a.Start, b.Start);
+        var end = int.Max(a.Start + a.Length, b.Start + b.Length);
+        return FromRange(start, end);
+    }
 }

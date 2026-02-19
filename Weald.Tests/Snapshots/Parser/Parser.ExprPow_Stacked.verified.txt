@@ -1,0 +1,51 @@
+﻿{
+  target:
+@ Script (location: 0:7)
+└── Stmts: 
+    @ Stmts (location: 0:7)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:7)
+            └── Expr: 
+                @ Call (location: 0:7)
+                ├── Arguments: 
+                │   @ Arguments (location: 2:5)
+                │   └── Items: (count: 1)
+                │       └── @ Call (location: 2:5)
+                │           ├── Arguments: 
+                │           │   @ Arguments (location: 4:3)
+                │           │   └── Items: (count: 1)
+                │           │       └── @ Call (location: 4:3)
+                │           │           ├── Arguments: 
+                │           │           │   @ Arguments (location: 6:1)
+                │           │           │   └── Items: (count: 1)
+                │           │           │       └── @ Int (location: 6:1)
+                │           │           │           └── Value: 5
+                │           │           ├── Function: 
+                │           │           │   @ Name (location: 5:1)
+                │           │           │   └── Value: "^"
+                │           │           ├── Receiver: 
+                │           │           │   @ Int (location: 4:1)
+                │           │           │   └── Value: 4
+                │           │           ├── ClosingLoc: ∅
+                │           │           ├── OpeningLoc: ∅
+                │           │           └── OperatorLoc: ∅
+                │           ├── Function: 
+                │           │   @ Name (location: 3:1)
+                │           │   └── Value: "^"
+                │           ├── Receiver: 
+                │           │   @ Int (location: 2:1)
+                │           │   └── Value: 3
+                │           ├── ClosingLoc: ∅
+                │           ├── OpeningLoc: ∅
+                │           └── OperatorLoc: ∅
+                ├── Function: 
+                │   @ Name (location: 1:1)
+                │   └── Value: "^"
+                ├── Receiver: 
+                │   @ Int (location: 0:1)
+                │   └── Value: 2
+                ├── ClosingLoc: ∅
+                ├── OpeningLoc: ∅
+                └── OperatorLoc: ∅,
+  problems: []
+}

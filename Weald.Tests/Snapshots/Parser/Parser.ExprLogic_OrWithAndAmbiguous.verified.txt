@@ -1,0 +1,32 @@
+﻿{
+  target:
+@ Script (location: 0:21)
+└── Stmts: 
+    @ Stmts (location: 0:21)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:21)
+            └── Expr: 
+                @ Or (location: 0:21)
+                ├── Left: 
+                │   @ True (location: 0:4)
+                ├── Right: 
+                │   @ And (location: 8:13)
+                │   ├── Left: 
+                │   │   @ False (location: 8:5)
+                │   ├── Right: 
+                │   │   @ True (location: 17:4)
+                │   └── OperatorLoc: 14:2
+                └── OperatorLoc: 5:2,
+  problems: [
+    {
+      Desc: {
+        Id: syntax/ambiguous-expr,
+        Message: ambiguous expression; use parentheses to express precedence clearly
+      },
+      Loc: {
+        Start: 5,
+        Length: 16
+      }
+    }
+  ]
+}

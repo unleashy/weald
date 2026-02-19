@@ -1,0 +1,21 @@
+﻿{
+  target:
+@ Script (location: 0:44)
+└── Stmts: 
+    @ Stmts (location: 0:44)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:44)
+            └── Expr: 
+                @ Missing (location: 0:44),
+  problems: [
+    {
+      Desc: {
+        Id: syntax/invalid-int,
+        Message: integer literal overflows 128 bits
+      },
+      Loc: {
+        Length: 44
+      }
+    }
+  ]
+}

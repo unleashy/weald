@@ -1,0 +1,8 @@
+﻿{
+  target:
+@ Script (location: 0:0)
+└── Stmts: 
+    @ Stmts (location: 0:0)
+    └── Items: (count: 0),
+  problems: []
+}

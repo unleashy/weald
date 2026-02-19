@@ -1,0 +1,16 @@
+﻿{
+  target:
+@ Script (location: 0:2)
+└── Stmts: 
+    @ Stmts (location: 0:2)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:2)
+            └── Expr: 
+                @ Block (location: 0:2)
+                ├── Stmts: 
+                │   @ Stmts (location: 0:0)
+                │   └── Items: (count: 0)
+                ├── ClosingLoc: 1:1
+                └── OpeningLoc: 0:1,
+  problems: []
+}

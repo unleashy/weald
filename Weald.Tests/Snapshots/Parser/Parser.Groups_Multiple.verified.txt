@@ -1,0 +1,27 @@
+﻿{
+  target:
+@ Script (location: 0:9)
+└── Stmts: 
+    @ Stmts (location: 0:8)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:8)
+            └── Expr: 
+                @ Group (location: 0:8)
+                ├── Body: 
+                │   @ VariableRead (location: 1:3)
+                │   └── Name: "foo"
+                ├── ClosingLoc: 5:3
+                └── OpeningLoc: 0:1,
+  problems: [
+    {
+      Desc: {
+        Id: syntax/unclosed-group,
+        Message: expected a matching ')'
+      },
+      Loc: {
+        Start: 5,
+        Length: 3
+      }
+    }
+  ]
+}

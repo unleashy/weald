@@ -1,0 +1,16 @@
+﻿{
+  target:
+@ Script (location: 0:18)
+└── Stmts: 
+    @ Stmts (location: 0:18)
+    └── Items: (count: 1)
+        └── @ VariableDecl (location: 0:18)
+            ├── Name: 
+            │   @ Name (location: 4:7)
+            │   └── Value: "boolean"
+            ├── Value: 
+            │   @ True (location: 14:4)
+            ├── EqLoc: 12:1
+            └── KwLetLoc: 0:3,
+  problems: []
+}

@@ -1,0 +1,52 @@
+﻿{
+  target:
+@ Script (location: 0:11)
+└── Stmts: 
+    @ Stmts (location: 0:11)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:11)
+            └── Expr: 
+                @ Call (location: 0:11)
+                ├── Arguments: 
+                │   @ Arguments (location: 4:7)
+                │   └── Items: (count: 1)
+                │       └── @ Group (location: 4:7)
+                │           ├── Body: 
+                │           │   @ Call (location: 5:6)
+                │           │   ├── Arguments: 
+                │           │   │   @ Arguments (location: 10:1)
+                │           │   │   └── Items: (count: 1)
+                │           │   │       └── @ Missing (location: 10:1)
+                │           │   ├── Function: 
+                │           │   │   @ Name (location: 7:2)
+                │           │   │   └── Value: ">="
+                │           │   ├── Receiver: 
+                │           │   │   @ Int (location: 5:1)
+                │           │   │   └── Value: 2
+                │           │   ├── ClosingLoc: ∅
+                │           │   ├── OpeningLoc: ∅
+                │           │   └── OperatorLoc: ∅
+                │           ├── ClosingLoc: 10:1
+                │           └── OpeningLoc: 4:1
+                ├── Function: 
+                │   @ Name (location: 2:1)
+                │   └── Value: "<"
+                ├── Receiver: 
+                │   @ Int (location: 0:1)
+                │   └── Value: 1
+                ├── ClosingLoc: ∅
+                ├── OpeningLoc: ∅
+                └── OperatorLoc: ∅,
+  problems: [
+    {
+      Desc: {
+        Id: syntax/expected-expr,
+        Message: expected an expression
+      },
+      Loc: {
+        Start: 10,
+        Length: 1
+      }
+    }
+  ]
+}

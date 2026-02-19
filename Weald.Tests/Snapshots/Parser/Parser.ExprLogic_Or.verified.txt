@@ -1,0 +1,16 @@
+﻿{
+  target:
+@ Script (location: 0:13)
+└── Stmts: 
+    @ Stmts (location: 0:13)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:13)
+            └── Expr: 
+                @ Or (location: 0:13)
+                ├── Left: 
+                │   @ True (location: 0:4)
+                ├── Right: 
+                │   @ False (location: 8:5)
+                └── OperatorLoc: 5:2,
+  problems: []
+}

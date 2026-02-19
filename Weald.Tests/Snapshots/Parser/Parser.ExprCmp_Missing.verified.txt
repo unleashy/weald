@@ -1,0 +1,34 @@
+﻿{
+  target:
+@ Script (location: 0:5)
+└── Stmts: 
+    @ Stmts (location: 0:5)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:5)
+            └── Expr: 
+                @ Call (location: 0:5)
+                ├── Arguments: 
+                │   @ Arguments (location: 5:0)
+                │   └── Items: (count: 1)
+                │       └── @ Missing (location: 5:0)
+                ├── Function: 
+                │   @ Name (location: 2:2)
+                │   └── Value: ">="
+                ├── Receiver: 
+                │   @ Int (location: 0:1)
+                │   └── Value: 1
+                ├── ClosingLoc: ∅
+                ├── OpeningLoc: ∅
+                └── OperatorLoc: ∅,
+  problems: [
+    {
+      Desc: {
+        Id: syntax/expected-expr,
+        Message: expected an expression
+      },
+      Loc: {
+        Start: 5
+      }
+    }
+  ]
+}

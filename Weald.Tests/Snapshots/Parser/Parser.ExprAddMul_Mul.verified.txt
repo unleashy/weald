@@ -1,0 +1,25 @@
+﻿{
+  target:
+@ Script (location: 0:5)
+└── Stmts: 
+    @ Stmts (location: 0:5)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:5)
+            └── Expr: 
+                @ Call (location: 0:5)
+                ├── Arguments: 
+                │   @ Arguments (location: 4:1)
+                │   └── Items: (count: 1)
+                │       └── @ VariableRead (location: 4:1)
+                │           └── Name: "i"
+                ├── Function: 
+                │   @ Name (location: 2:1)
+                │   └── Value: "*"
+                ├── Receiver: 
+                │   @ VariableRead (location: 0:1)
+                │   └── Name: "e"
+                ├── ClosingLoc: ∅
+                ├── OpeningLoc: ∅
+                └── OperatorLoc: ∅,
+  problems: []
+}

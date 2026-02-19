@@ -1,0 +1,24 @@
+﻿{
+  target:
+@ Script (location: 0:11)
+└── Stmts: 
+    @ Stmts (location: 0:11)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:11)
+            └── Expr: 
+                @ Block (location: 0:11)
+                ├── Stmts: 
+                │   @ Stmts (location: 0:9)
+                │   └── Items: (count: 2)
+                │       ├── @ StmtExpr (location: 2:3)
+                │       │   └── Expr: 
+                │       │       @ VariableRead (location: 2:3)
+                │       │       └── Name: "foo"
+                │       └── @ StmtExpr (location: 6:3)
+                │           └── Expr: 
+                │               @ VariableRead (location: 6:3)
+                │               └── Name: "bar"
+                ├── ClosingLoc: 10:1
+                └── OpeningLoc: 0:1,
+  problems: []
+}

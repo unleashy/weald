@@ -1,0 +1,12 @@
+﻿{
+  target:
+@ Script (location: 0:4)
+└── Stmts: 
+    @ Stmts (location: 0:4)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:4)
+            └── Expr: 
+                @ VariableRead (location: 0:4)
+                └── Name: "name",
+  problems: []
+}

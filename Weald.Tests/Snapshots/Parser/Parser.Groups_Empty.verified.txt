@@ -1,0 +1,26 @@
+﻿{
+  target:
+@ Script (location: 0:2)
+└── Stmts: 
+    @ Stmts (location: 0:2)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:2)
+            └── Expr: 
+                @ Group (location: 0:2)
+                ├── Body: 
+                │   @ Missing (location: 1:1)
+                ├── ClosingLoc: 1:1
+                └── OpeningLoc: 0:1,
+  problems: [
+    {
+      Desc: {
+        Id: syntax/expected-expr-in-group,
+        Message: expected an expression after '('
+      },
+      Loc: {
+        Start: 1,
+        Length: 1
+      }
+    }
+  ]
+}

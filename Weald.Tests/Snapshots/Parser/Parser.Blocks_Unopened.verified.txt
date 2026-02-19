@@ -1,0 +1,23 @@
+﻿{
+  target:
+@ Script (location: 0:5)
+└── Stmts: 
+    @ Stmts (location: 0:3)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:3)
+            └── Expr: 
+                @ VariableRead (location: 0:3)
+                └── Name: "foo",
+  problems: [
+    {
+      Desc: {
+        Id: syntax/expected-end,
+        Message: unexpected token after being done parsing
+      },
+      Loc: {
+        Start: 4,
+        Length: 1
+      }
+    }
+  ]
+}

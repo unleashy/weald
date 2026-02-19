@@ -1,0 +1,59 @@
+﻿{
+  target:
+@ Script (location: 0:11)
+└── Stmts: 
+    @ Stmts (location: 0:11)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:11)
+            └── Expr: 
+                @ Call (location: 0:11)
+                ├── Arguments: 
+                │   @ Arguments (location: 10:1)
+                │   └── Items: (count: 1)
+                │       └── @ Int (location: 10:1)
+                │           └── Value: 5
+                ├── Function: 
+                │   @ Name (location: 9:1)
+                │   └── Value: "^"
+                ├── Receiver: 
+                │   @ Group (location: 0:9)
+                │   ├── Body: 
+                │   │   @ Call (location: 1:7)
+                │   │   ├── Arguments: 
+                │   │   │   @ Arguments (location: 7:1)
+                │   │   │   └── Items: (count: 1)
+                │   │   │       └── @ Int (location: 7:1)
+                │   │   │           └── Value: 4
+                │   │   ├── Function: 
+                │   │   │   @ Name (location: 6:1)
+                │   │   │   └── Value: "^"
+                │   │   ├── Receiver: 
+                │   │   │   @ Group (location: 1:5)
+                │   │   │   ├── Body: 
+                │   │   │   │   @ Call (location: 2:3)
+                │   │   │   │   ├── Arguments: 
+                │   │   │   │   │   @ Arguments (location: 4:1)
+                │   │   │   │   │   └── Items: (count: 1)
+                │   │   │   │   │       └── @ Int (location: 4:1)
+                │   │   │   │   │           └── Value: 3
+                │   │   │   │   ├── Function: 
+                │   │   │   │   │   @ Name (location: 3:1)
+                │   │   │   │   │   └── Value: "^"
+                │   │   │   │   ├── Receiver: 
+                │   │   │   │   │   @ Int (location: 2:1)
+                │   │   │   │   │   └── Value: 2
+                │   │   │   │   ├── ClosingLoc: ∅
+                │   │   │   │   ├── OpeningLoc: ∅
+                │   │   │   │   └── OperatorLoc: ∅
+                │   │   │   ├── ClosingLoc: 5:1
+                │   │   │   └── OpeningLoc: 1:1
+                │   │   ├── ClosingLoc: ∅
+                │   │   ├── OpeningLoc: ∅
+                │   │   └── OperatorLoc: ∅
+                │   ├── ClosingLoc: 8:1
+                │   └── OpeningLoc: 0:1
+                ├── ClosingLoc: ∅
+                ├── OpeningLoc: ∅
+                └── OperatorLoc: ∅,
+  problems: []
+}

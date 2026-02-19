@@ -1,0 +1,25 @@
+﻿{
+  target:
+@ Script (location: 0:6)
+└── Stmts: 
+    @ Stmts (location: 0:6)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:6)
+            └── Expr: 
+                @ Call (location: 0:6)
+                ├── Arguments: 
+                │   @ Arguments (location: 4:2)
+                │   └── Items: (count: 1)
+                │       └── @ Int (location: 4:2)
+                │           └── Value: -5
+                ├── Function: 
+                │   @ Name (location: 2:1)
+                │   └── Value: "-"
+                ├── Receiver: 
+                │   @ Int (location: 0:1)
+                │   └── Value: 1
+                ├── ClosingLoc: ∅
+                ├── OpeningLoc: ∅
+                └── OperatorLoc: ∅,
+  problems: []
+}

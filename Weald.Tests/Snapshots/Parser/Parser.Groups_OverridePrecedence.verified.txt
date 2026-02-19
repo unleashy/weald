@@ -1,0 +1,42 @@
+﻿{
+  target:
+@ Script (location: 0:11)
+└── Stmts: 
+    @ Stmts (location: 0:11)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:11)
+            └── Expr: 
+                @ Call (location: 0:11)
+                ├── Arguments: 
+                │   @ Arguments (location: 10:1)
+                │   └── Items: (count: 1)
+                │       └── @ Int (location: 10:1)
+                │           └── Value: 3
+                ├── Function: 
+                │   @ Name (location: 8:1)
+                │   └── Value: "*"
+                ├── Receiver: 
+                │   @ Group (location: 0:7)
+                │   ├── Body: 
+                │   │   @ Call (location: 1:5)
+                │   │   ├── Arguments: 
+                │   │   │   @ Arguments (location: 5:1)
+                │   │   │   └── Items: (count: 1)
+                │   │   │       └── @ Int (location: 5:1)
+                │   │   │           └── Value: 2
+                │   │   ├── Function: 
+                │   │   │   @ Name (location: 3:1)
+                │   │   │   └── Value: "+"
+                │   │   ├── Receiver: 
+                │   │   │   @ Int (location: 1:1)
+                │   │   │   └── Value: 1
+                │   │   ├── ClosingLoc: ∅
+                │   │   ├── OpeningLoc: ∅
+                │   │   └── OperatorLoc: ∅
+                │   ├── ClosingLoc: 6:1
+                │   └── OpeningLoc: 0:1
+                ├── ClosingLoc: ∅
+                ├── OpeningLoc: ∅
+                └── OperatorLoc: ∅,
+  problems: []
+}

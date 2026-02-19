@@ -1,0 +1,21 @@
+﻿{
+  target:
+@ Script (location: 0:1)
+└── Stmts: 
+    @ Stmts (location: 0:1)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:1)
+            └── Expr: 
+                @ Missing (location: 0:1),
+  problems: [
+    {
+      Desc: {
+        Id: syntax/invalid-token,
+        Message: invalid punctuation '~'
+      },
+      Loc: {
+        Length: 1
+      }
+    }
+  ]
+}

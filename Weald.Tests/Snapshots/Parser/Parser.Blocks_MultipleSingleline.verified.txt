@@ -1,0 +1,31 @@
+﻿{
+  target:
+@ Script (location: 0:11)
+└── Stmts: 
+    @ Stmts (location: 0:9)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:9)
+            └── Expr: 
+                @ Block (location: 0:9)
+                ├── Stmts: 
+                │   @ Stmts (location: 0:5)
+                │   └── Items: (count: 1)
+                │       └── @ StmtExpr (location: 2:3)
+                │           └── Expr: 
+                │               @ VariableRead (location: 2:3)
+                │               └── Name: "foo"
+                ├── ClosingLoc: 6:3
+                └── OpeningLoc: 0:1,
+  problems: [
+    {
+      Desc: {
+        Id: syntax/unclosed-block,
+        Message: expected a matching '}'
+      },
+      Loc: {
+        Start: 6,
+        Length: 3
+      }
+    }
+  ]
+}

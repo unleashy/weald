@@ -1,4 +1,6 @@
-﻿using System.Globalization;
+﻿using System.Diagnostics;
+using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text;
 using JetBrains.Annotations;
 
@@ -37,5 +39,17 @@ public static class StringExtensions
 
             return self[0 .. end];
         }
+    }
+
+    [Pure]
+    [AssertionMethod]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static string AssertPresence(
+        [AssertionCondition(AssertionConditionType.IS_NOT_NULL)] this string? self,
+        [CallerArgumentExpression(nameof(self))] string? cae = null
+    )
+    {
+        Debug.Assert(!string.IsNullOrEmpty(self), $"{cae} is null or empty");
+        return self;
     }
 }

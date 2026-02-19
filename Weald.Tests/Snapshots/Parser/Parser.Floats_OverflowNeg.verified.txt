@@ -1,0 +1,21 @@
+﻿{
+  target:
+@ Script (location: 0:8)
+└── Stmts: 
+    @ Stmts (location: 0:8)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:8)
+            └── Expr: 
+                @ Missing (location: 0:8),
+  problems: [
+    {
+      Desc: {
+        Id: syntax/invalid-float,
+        Message: float literal cannot be accurately parsed
+      },
+      Loc: {
+        Length: 8
+      }
+    }
+  ]
+}

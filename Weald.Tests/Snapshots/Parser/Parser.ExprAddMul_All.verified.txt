@@ -1,0 +1,77 @@
+﻿{
+  target:
+@ Script (location: 0:21)
+└── Stmts: 
+    @ Stmts (location: 0:21)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:21)
+            └── Expr: 
+                @ Call (location: 0:21)
+                ├── Arguments: 
+                │   @ Arguments (location: 16:5)
+                │   └── Items: (count: 1)
+                │       └── @ Call (location: 16:5)
+                │           ├── Arguments: 
+                │           │   @ Arguments (location: 20:1)
+                │           │   └── Items: (count: 1)
+                │           │       └── @ VariableRead (location: 20:1)
+                │           │           └── Name: "f"
+                │           ├── Function: 
+                │           │   @ Name (location: 18:1)
+                │           │   └── Value: "%"
+                │           ├── Receiver: 
+                │           │   @ VariableRead (location: 16:1)
+                │           │   └── Name: "e"
+                │           ├── ClosingLoc: ∅
+                │           ├── OpeningLoc: ∅
+                │           └── OperatorLoc: ∅
+                ├── Function: 
+                │   @ Name (location: 14:1)
+                │   └── Value: "-"
+                ├── Receiver: 
+                │   @ Call (location: 0:13)
+                │   ├── Arguments: 
+                │   │   @ Arguments (location: 4:9)
+                │   │   └── Items: (count: 1)
+                │   │       └── @ Call (location: 4:9)
+                │   │           ├── Arguments: 
+                │   │           │   @ Arguments (location: 12:1)
+                │   │           │   └── Items: (count: 1)
+                │   │           │       └── @ VariableRead (location: 12:1)
+                │   │           │           └── Name: "d"
+                │   │           ├── Function: 
+                │   │           │   @ Name (location: 10:1)
+                │   │           │   └── Value: "/"
+                │   │           ├── Receiver: 
+                │   │           │   @ Call (location: 4:5)
+                │   │           │   ├── Arguments: 
+                │   │           │   │   @ Arguments (location: 8:1)
+                │   │           │   │   └── Items: (count: 1)
+                │   │           │   │       └── @ VariableRead (location: 8:1)
+                │   │           │   │           └── Name: "c"
+                │   │           │   ├── Function: 
+                │   │           │   │   @ Name (location: 6:1)
+                │   │           │   │   └── Value: "*"
+                │   │           │   ├── Receiver: 
+                │   │           │   │   @ VariableRead (location: 4:1)
+                │   │           │   │   └── Name: "b"
+                │   │           │   ├── ClosingLoc: ∅
+                │   │           │   ├── OpeningLoc: ∅
+                │   │           │   └── OperatorLoc: ∅
+                │   │           ├── ClosingLoc: ∅
+                │   │           ├── OpeningLoc: ∅
+                │   │           └── OperatorLoc: ∅
+                │   ├── Function: 
+                │   │   @ Name (location: 2:1)
+                │   │   └── Value: "+"
+                │   ├── Receiver: 
+                │   │   @ VariableRead (location: 0:1)
+                │   │   └── Name: "a"
+                │   ├── ClosingLoc: ∅
+                │   ├── OpeningLoc: ∅
+                │   └── OperatorLoc: ∅
+                ├── ClosingLoc: ∅
+                ├── OpeningLoc: ∅
+                └── OperatorLoc: ∅,
+  problems: []
+}
