@@ -521,7 +521,7 @@ Syntax:
       - Blocks:
           - ◊syn:
               ◊caption: blocks
-              Block: "`{` NL Stmts NL `}`"
+              Block: "`{` NL Stmts? NL `}`"
           - >
             Blocks are a type of expression that allows expressions to contain ◊[statements] by
             grouping them within braces.
