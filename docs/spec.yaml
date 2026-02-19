@@ -628,10 +628,9 @@ Syntax:
           Stmts: Stmt (Newline+ Stmt)*
           Stmt:
             - Decl
-            - Block
-            - If
+            - Expr
       - >
-        Statements are one of: ◊[declarations], ◊[blocks], or ◊[if expressions].
+        Statements are either ◊[declarations] or ◊[expressions].
 
   - Declarations:
       - ◊syn:
