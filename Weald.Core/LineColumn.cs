@@ -67,12 +67,14 @@ public readonly record struct LineColumn
         text[index - 1] == '\r';
 }
 
-file readonly struct LineIndices(ImmutableArray<int> indices)
+public readonly struct LineIndices(ImmutableArray<int> indices)
 {
     private static readonly Dictionary<string, LineIndices> Cache = [];
 
+    [Pure]
     public static LineIndices For(string text) => Cache.GetValueElse(text, Compute);
 
+    [Pure]
     public (int line, int startLineIndex) Get(int index)
     {
         var line = indices.BinarySearch(index);
@@ -81,6 +83,9 @@ file readonly struct LineIndices(ImmutableArray<int> indices)
         return (line, indices[line]);
     }
 
+    public ImmutableArray<int> Indices => indices;
+
+    [Pure]
     private static LineIndices Compute(string text)
     {
         var indices = ImmutableArray.CreateBuilder<int>(initialCapacity: 1);
@@ -100,6 +105,7 @@ file readonly struct LineIndices(ImmutableArray<int> indices)
         return new LineIndices(indices.DrainToImmutable());
     }
 
+    [Pure]
     private static bool IsCrLf(string text, int index) =>
         index + 1 < text.Length && text[index] == '\r' && text[index + 1] == '\n';
 }

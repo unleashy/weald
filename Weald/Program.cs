@@ -8,16 +8,10 @@ Repl(line => {
 
     Console.WriteLine(AstPrinter.Print(result.Ast));
 
-    if (result.HasProblems) {
-        Console.ForegroundColor = ConsoleColor.Red;
+    var sourceInfo = SourceInfo.Create(source);
+    foreach (var problem in result.Problems) {
         Console.Error.WriteLine();
-
-        foreach (var (desc, loc) in result.Problems) {
-            var lc = LineColumn.FromLoc(source.Body, loc);
-            Console.Error.WriteLine($"error: {desc.Message} @ {source.Name}:{lc} [{desc.Id}]");
-        }
-
-        Console.ResetColor();
+        Console.Error.WriteLine(problem.FormatForConsole(sourceInfo));
     }
 });
 
