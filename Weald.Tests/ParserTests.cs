@@ -100,4 +100,22 @@ public class ParserTests : BaseTest
     [TestCase("MultipleUnclosed", "(foo bar")]
     [TestCase("OverridePrecedence", "(1 + 2) * 3")]
     public Task Groups(string name, string sut) => Verify(sut).UseTextForParameters(name);
+
+    [TestCase("Simple", "if true {}")]
+    [TestCase("Condition", "if 1 == 2 {}")]
+    [TestCase("Else", "if !true {} else {}")]
+    [TestCase("ElseIf", "if !true {} else if true {}")]
+    [TestCase("NoPredicate", "if ) {}")]
+    [TestCase("NoThenBody", "if true 1")]
+    [TestCase("NoElseBody", "if true {} else 1")]
+    public Task Ifs(string name, string sut) => Verify(sut).UseTextForParameters(name);
+
+    [TestCase("Simple", "if true ? 0 : 1")]
+    [TestCase("NoCondition", "if ? 0 : 1")]
+    [TestCase("NoThenBody", "if true ? ) : 1")]
+    [TestCase("NoElseBody", "if true ? 0 1")]
+    [TestCase("BlockInThen", "if true ? {} : 1")]
+    [TestCase("BlockInElse", "if true ? 0 : {}")]
+    [TestCase("BlockNested", "if true ? ({} + 2) : (1 + {})")]
+    public Task Ternary(string name, string sut) => Verify(sut).UseTextForParameters(name);
 }

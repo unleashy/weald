@@ -1,5 +1,7 @@
 ﻿Token.KwDiscard@0:1
-Token.KwFalse@2:5
-Token.KwLet@8:3
-Token.KwTrue@12:4
-Token.End@16:0
+Token.KwElse@2:4
+Token.KwFalse@7:5
+Token.KwIf@13:2
+Token.KwLet@16:3
+Token.KwTrue@20:4
+Token.End@24:0

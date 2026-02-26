@@ -81,19 +81,17 @@ public sealed record AstBlock : IAstExpr
     public required Loc Loc { get; init; }
 }
 
-public interface IAstIfAlternate : IAst;
-
-public sealed record AstIf : IAstExpr, IAstIfAlternate
+public sealed record AstIf : IAstExpr
 {
     public required Loc KwIfLoc { get; init; }
     public required IAstExpr Predicate { get; init; }
     public Loc? TernaryThenLoc { get; init; }
     public required IAstExpr Then { get; init; }
-    public IAstIfAlternate? Else { get; init; }
+    public AstElse? Else { get; init; }
     public required Loc Loc { get; init; }
 }
 
-public sealed record AstElse : IAstIfAlternate
+public sealed record AstElse : IAst
 {
     public required Loc KwElseLoc { get; init; }
     public required IAstExpr Body { get; init; }

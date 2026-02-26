@@ -13,7 +13,9 @@ public enum TokenTag : byte
     #region Keywords
 
     KwDiscard,
+    KwElse,
     KwFalse,
+    KwIf,
     KwLet,
     KwTrue,
 
@@ -39,6 +41,7 @@ public enum TokenTag : byte
     PMinus,
     PComma,
     PColon,
+    PQuestion,
     PDot,
     PSlash,
     PLess,
@@ -104,7 +107,9 @@ public static class TokenTagExtensions
         public static TokenTag? GetKeyword(string term) =>
             term switch {
                 "_"     => TokenTag.KwDiscard,
+                "else"  => TokenTag.KwElse,
                 "false" => TokenTag.KwFalse,
+                "if"    => TokenTag.KwIf,
                 "let"   => TokenTag.KwLet,
                 "true"  => TokenTag.KwTrue,
                 _ => null,

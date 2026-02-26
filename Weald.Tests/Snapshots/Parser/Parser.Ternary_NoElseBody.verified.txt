@@ -1,0 +1,29 @@
+﻿{
+  target:
+@ Script (location: 0:13)
+└── Stmts: 
+    @ Stmts (location: 0:11)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:11)
+            └── Expr: 
+                @ If (location: 0:11)
+                ├── Else: ∅
+                ├── Predicate: 
+                │   @ True (location: 3:4)
+                ├── Then: 
+                │   @ Int (location: 10:1)
+                │   └── Value: 0
+                ├── KwIfLoc: 0:2
+                └── TernaryThenLoc: 8:1,
+  problems: [
+    {
+      Desc: {
+        Id: syntax/expected-ternary-else,
+        Message: expected ':' after '?' expression
+      },
+      Loc: {
+        Start: 11
+      }
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+﻿{
+  target:
+@ Script (location: 0:29)
+└── Stmts: 
+    @ Stmts (location: 0:29)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:29)
+            └── Expr: 
+                @ If (location: 0:29)
+                ├── Else: 
+                │   @ Else (location: 19:10)
+                │   ├── Body: 
+                │   │   @ Group (location: 21:8)
+                │   │   ├── Body: 
+                │   │   │   @ Call (location: 22:6)
+                │   │   │   ├── Arguments: 
+                │   │   │   │   @ Arguments (location: 26:2)
+                │   │   │   │   └── Items: (count: 1)
+                │   │   │   │       └── @ Block (location: 26:2)
+                │   │   │   │           ├── Stmts: 
+                │   │   │   │           │   @ Stmts (location: 0:0)
+                │   │   │   │           │   └── Items: (count: 0)
+                │   │   │   │           ├── ClosingLoc: 27:1
+                │   │   │   │           └── OpeningLoc: 26:1
+                │   │   │   ├── Function: 
+                │   │   │   │   @ Name (location: 24:1)
+                │   │   │   │   └── Value: "+"
+                │   │   │   ├── Receiver: 
+                │   │   │   │   @ Int (location: 22:1)
+                │   │   │   │   └── Value: 1
+                │   │   │   ├── ClosingLoc: ∅
+                │   │   │   ├── OpeningLoc: ∅
+                │   │   │   └── OperatorLoc: ∅
+                │   │   ├── ClosingLoc: 28:1
+                │   │   └── OpeningLoc: 21:1
+                │   └── KwElseLoc: 19:1
+                ├── Predicate: 
+                │   @ True (location: 3:4)
+                ├── Then: 
+                │   @ Group (location: 10:8)
+                │   ├── Body: 
+                │   │   @ Call (location: 11:6)
+                │   │   ├── Arguments: 
+                │   │   │   @ Arguments (location: 16:1)
+                │   │   │   └── Items: (count: 1)
+                │   │   │       └── @ Int (location: 16:1)
+                │   │   │           └── Value: 2
+                │   │   ├── Function: 
+                │   │   │   @ Name (location: 14:1)
+                │   │   │   └── Value: "+"
+                │   │   ├── Receiver: 
+                │   │   │   @ Block (location: 11:2)
+                │   │   │   ├── Stmts: 
+                │   │   │   │   @ Stmts (location: 0:0)
+                │   │   │   │   └── Items: (count: 0)
+                │   │   │   ├── ClosingLoc: 12:1
+                │   │   │   └── OpeningLoc: 11:1
+                │   │   ├── ClosingLoc: ∅
+                │   │   ├── OpeningLoc: ∅
+                │   │   └── OperatorLoc: ∅
+                │   ├── ClosingLoc: 17:1
+                │   └── OpeningLoc: 10:1
+                ├── KwIfLoc: 0:2
+                └── TernaryThenLoc: 8:1,
+  problems: [
+    {
+      Desc: {
+        Id: syntax/block-in-ternary,
+        Message: blocks are not allowed in ternary expressions; rewrite to a standard 'if'
+      },
+      Loc: {
+        Start: 21,
+        Length: 8
+      }
+    }
+  ]
+}

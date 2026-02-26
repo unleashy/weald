@@ -1,0 +1,38 @@
+﻿{
+  target:
+@ Script (location: 0:8)
+└── Stmts: 
+    @ Stmts (location: 0:4)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:4)
+            └── Expr: 
+                @ If (location: 0:4)
+                ├── Else: ∅
+                ├── Predicate: 
+                │   @ Missing (location: 3:1)
+                ├── Then: 
+                │   @ Missing (location: 4:0)
+                ├── KwIfLoc: 0:2
+                └── TernaryThenLoc: ∅,
+  problems: [
+    {
+      Desc: {
+        Id: syntax/expected-predicate,
+        Message: expected a predicate for 'if'
+      },
+      Loc: {
+        Start: 3,
+        Length: 1
+      }
+    },
+    {
+      Desc: {
+        Id: syntax/expected-if-body,
+        Message: expected '{' or '?' after 'if' predicate
+      },
+      Loc: {
+        Start: 4
+      }
+    }
+  ]
+}

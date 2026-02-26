@@ -1,0 +1,39 @@
+﻿{
+  target:
+@ Script (location: 0:16)
+└── Stmts: 
+    @ Stmts (location: 0:16)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:16)
+            └── Expr: 
+                @ If (location: 0:16)
+                ├── Else: 
+                │   @ Else (location: 12:4)
+                │   ├── Body: 
+                │   │   @ Block (location: 14:2)
+                │   │   ├── Stmts: 
+                │   │   │   @ Stmts (location: 0:0)
+                │   │   │   └── Items: (count: 0)
+                │   │   ├── ClosingLoc: 15:1
+                │   │   └── OpeningLoc: 14:1
+                │   └── KwElseLoc: 12:1
+                ├── Predicate: 
+                │   @ True (location: 3:4)
+                ├── Then: 
+                │   @ Int (location: 10:1)
+                │   └── Value: 0
+                ├── KwIfLoc: 0:2
+                └── TernaryThenLoc: 8:1,
+  problems: [
+    {
+      Desc: {
+        Id: syntax/block-in-ternary,
+        Message: blocks are not allowed in ternary expressions; rewrite to a standard 'if'
+      },
+      Loc: {
+        Start: 14,
+        Length: 2
+      }
+    }
+  ]
+}

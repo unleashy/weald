@@ -1,0 +1,34 @@
+﻿{
+  target:
+@ Script (location: 0:7)
+└── Stmts: 
+    @ Stmts (location: 0:7)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:7)
+            └── Expr: 
+                @ If (location: 0:7)
+                ├── Else: ∅
+                ├── Predicate: 
+                │   @ Missing (location: 3:1)
+                ├── Then: 
+                │   @ Block (location: 5:2)
+                │   ├── Stmts: 
+                │   │   @ Stmts (location: 0:0)
+                │   │   └── Items: (count: 0)
+                │   ├── ClosingLoc: 6:1
+                │   └── OpeningLoc: 5:1
+                ├── KwIfLoc: 0:2
+                └── TernaryThenLoc: ∅,
+  problems: [
+    {
+      Desc: {
+        Id: syntax/expected-predicate,
+        Message: expected a predicate for 'if'
+      },
+      Loc: {
+        Start: 3,
+        Length: 1
+      }
+    }
+  ]
+}

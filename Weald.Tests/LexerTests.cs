@@ -15,7 +15,6 @@ public class LexerTests : BaseTest
     {
         Settings.UseDirectory("Snapshots/Lexer");
         Settings.UseTypeName("Lexer");
-        Settings.DisableDiff();
     }
 
     private static SettingsTask Verify(string text)
@@ -97,7 +96,7 @@ public class LexerTests : BaseTest
 
     [Test]
     public Task Punctuation() =>
-        Verify(@"( ) [ ] { } * \ && % ^ | || + - , : . / < <= = == ! != >= >");
+        Verify(@"( ) [ ] { } * \ && % ^ | || + - , : ? . / < <= = == ! != >= >");
 
     [Test]
     public Task InvalidPunctuation() => Verify("#");
@@ -150,7 +149,7 @@ public class LexerTests : BaseTest
     public Task NamesOverlongFinal() => Verify("foo?? bar!? bux?! baz!!");
 
     [Test]
-    public Task Keywords() => Verify("_ false let true");
+    public Task Keywords() => Verify("_ else false if let true");
 
     [Test]
     public Task NamesEmbeddedBidi() => Verify("foo\u200Ebar else\u200Fif");

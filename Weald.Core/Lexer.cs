@@ -83,6 +83,7 @@ file struct Core(Source source, ImmutableArray<Token>.Builder tokens)
                 case '-':  EmitPunct(PMinus, mark); break;
                 case ',':  EmitPunct(PComma, mark); break;
                 case ':':  EmitPunct(PColon, mark); break;
+                case '?':  EmitPunct(PQuestion, mark); break;
                 case '.':  EmitPunct(PDot, mark); break;
                 case '/':  EmitPunct(PSlash, mark); break;
                 // ! !=

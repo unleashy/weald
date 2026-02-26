@@ -1,0 +1,37 @@
+﻿{
+  target:
+@ Script (location: 0:12)
+└── Stmts: 
+    @ Stmts (location: 0:12)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:12)
+            └── Expr: 
+                @ If (location: 0:12)
+                ├── Else: ∅
+                ├── Predicate: 
+                │   @ Call (location: 3:6)
+                │   ├── Arguments: 
+                │   │   @ Arguments (location: 8:1)
+                │   │   └── Items: (count: 1)
+                │   │       └── @ Int (location: 8:1)
+                │   │           └── Value: 2
+                │   ├── Function: 
+                │   │   @ Name (location: 5:2)
+                │   │   └── Value: "=="
+                │   ├── Receiver: 
+                │   │   @ Int (location: 3:1)
+                │   │   └── Value: 1
+                │   ├── ClosingLoc: ∅
+                │   ├── OpeningLoc: ∅
+                │   └── OperatorLoc: ∅
+                ├── Then: 
+                │   @ Block (location: 10:2)
+                │   ├── Stmts: 
+                │   │   @ Stmts (location: 0:0)
+                │   │   └── Items: (count: 0)
+                │   ├── ClosingLoc: 11:1
+                │   └── OpeningLoc: 10:1
+                ├── KwIfLoc: 0:2
+                └── TernaryThenLoc: ∅,
+  problems: []
+}

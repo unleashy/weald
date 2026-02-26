@@ -65,6 +65,41 @@ public static class Parser
             Message = "expected an expression after '('",
         };
 
+        public static readonly ProblemDesc ExpectedPredicate = new() {
+            Id = "syntax/expected-predicate",
+            Message = "expected a predicate for 'if'",
+        };
+
+        public static readonly ProblemDesc ExpectedIfBody = new() {
+            Id = "syntax/expected-if-body",
+            Message = "expected '{' or '?' after 'if' predicate",
+        };
+
+        public static readonly ProblemDesc ExpectedElseBody = new() {
+            Id = "syntax/expected-else-body",
+            Message = "expected '{' or 'if' after 'else'",
+        };
+
+        public static readonly ProblemDesc ExpectedExprInTernaryThen = new() {
+            Id = "syntax/expected-expr-in-ternary-then",
+            Message = "expected an expression after '?'",
+        };
+
+        public static readonly ProblemDesc ExpectedTernaryElse = new() {
+            Id = "syntax/expected-ternary-else",
+            Message = "expected ':' after '?' expression",
+        };
+
+        public static readonly ProblemDesc ExpectedExprInTernaryElse = new() {
+            Id = "syntax/expected-expr-in-ternary-else",
+            Message = "expected an expression after ':'",
+        };
+
+        public static readonly ProblemDesc BlockInTernary = new() {
+            Id = "syntax/block-in-ternary",
+            Message = "blocks are not allowed in ternary expressions; rewrite to a standard 'if'",
+        };
+
         public static readonly ProblemDesc UnclosedGroup = new() {
             Id = "syntax/unclosed-group",
             Message = "expected a matching ')'",
@@ -170,11 +205,19 @@ file sealed class Core(ParserLexer lexer, ProblemArrayBuilder problems)
     }
 
     private IAstExpr Expr(PowerLevel minPower, ProblemDesc fallbackDesc) =>
-        Expr(minPower, prevOp: default, fallbackDesc);
+        Expr(minPower, prevOp: default, fallbackDesc, out _);
 
-    private IAstExpr Expr(PowerLevel minPower, BinaryOperator prevOp, ProblemDesc fallbackDesc)
+    private IAstExpr Expr(PowerLevel minPower, ProblemDesc fallbackDesc, out bool hasBlock) =>
+        Expr(minPower, prevOp: default, fallbackDesc, out hasBlock);
+
+    private IAstExpr Expr(
+        PowerLevel minPower,
+        BinaryOperator prevOp,
+        ProblemDesc fallbackDesc,
+        out bool hasBlock
+    )
     {
-        var left = ExprPrefix(fallbackDesc);
+        var left = ExprPrefix(fallbackDesc, out hasBlock);
 
         while (!lexer.IsEmpty) {
             var token = lexer.Current;
@@ -190,7 +233,7 @@ file sealed class Core(ParserLexer lexer, ProblemArrayBuilder problems)
             }
 
             lexer.MoveNext();
-            left = ExprInfix(left, op, Parser.Problems.ExpectedExpr);
+            left = ExprInfix(left, op, Parser.Problems.ExpectedExpr, out hasBlock);
 
             if (isAmbiguous) {
                 problems.Report(Parser.Problems.AmbiguousExpr, Loc.Join(prevOp.Loc, left.Loc));
@@ -200,9 +243,14 @@ file sealed class Core(ParserLexer lexer, ProblemArrayBuilder problems)
         return left;
     }
 
-    private IAstExpr ExprInfix(IAstExpr left, BinaryOperator op, ProblemDesc fallbackDesc)
+    private IAstExpr ExprInfix(
+        IAstExpr left,
+        BinaryOperator op,
+        ProblemDesc fallbackDesc,
+        out bool hasBlock
+    )
     {
-        var right = Expr(op.NextPower, op, fallbackDesc);
+        var right = Expr(op.NextPower, op, fallbackDesc, out hasBlock);
 
         return op.Tag switch {
             PAndAnd => new AstAnd {
@@ -231,20 +279,30 @@ file sealed class Core(ParserLexer lexer, ProblemArrayBuilder problems)
         };
     }
 
-    private IAstExpr ExprPrefix(ProblemDesc descIfMissing)
+    private IAstExpr ExprPrefix(ProblemDesc descIfMissing, out bool hasBlock)
     {
+        hasBlock = false;
+
         var token = lexer.Current;
         if (!IsBreakpoint(token.Tag)) {
             lexer.MoveNext();
         }
 
         switch (token.Tag) {
-            case TokenTag.PBang:  return Unary(token, "unary !");
-            case TokenTag.PMinus: return Unary(token, "unary -");
-            case TokenTag.PPlus:  return Unary(token, "unary +");
+            case TokenTag.PBang:  return Unary(token, "unary !", out hasBlock);
+            case TokenTag.PMinus: return Unary(token, "unary -", out hasBlock);
+            case TokenTag.PPlus:  return Unary(token, "unary +", out hasBlock);
 
-            case TokenTag.PParenOpen: return Group(token);
-            case TokenTag.PBraceOpen: return Block(token);
+            case TokenTag.PBraceOpen: {
+                hasBlock = true;
+                return Block(token);
+            }
+            case TokenTag.KwIf: {
+                hasBlock = true;
+                return If(token);
+            }
+
+            case TokenTag.PParenOpen: return Group(token, out hasBlock);
 
             case TokenTag.Name:    return Name(token);
             case TokenTag.KwTrue:  return True(token);
@@ -262,10 +320,14 @@ file sealed class Core(ParserLexer lexer, ProblemArrayBuilder problems)
         }
     }
 
-    private AstCall Unary(Token token, string name)
+    private AstCall Unary(Token token, string name, out bool hasBlock)
     {
         var receiver =
-            Expr(minPower: PowerLevel.Unary, fallbackDesc: Parser.Problems.ExpectedExpr);
+            Expr(
+                minPower: PowerLevel.Unary,
+                fallbackDesc: Parser.Problems.ExpectedExpr,
+                out hasBlock
+            );
 
         return new AstCall {
             Receiver = receiver,
@@ -275,11 +337,18 @@ file sealed class Core(ParserLexer lexer, ProblemArrayBuilder problems)
         };
     }
 
-    private AstGroup Group(Token opening)
+    private AstGroup Group(Token opening, out bool hasBlock)
     {
+        var hasBlockTmp = false;
         var body = WithBreakpoint(PParenClose, () =>
-            Expr(minPower: PowerLevel.Lowest, fallbackDesc: Parser.Problems.ExpectedExprInGroup)
+            Expr(
+                minPower: PowerLevel.Lowest,
+                fallbackDesc: Parser.Problems.ExpectedExprInGroup,
+                out hasBlockTmp
+            )
         );
+
+        hasBlock = hasBlockTmp;
 
         var closing = lexer.Expect(PParenClose, Parser.Problems.UnclosedGroup);
 
@@ -302,6 +371,106 @@ file sealed class Core(ParserLexer lexer, ProblemArrayBuilder problems)
             OpeningLoc = opening.Loc,
             ClosingLoc = closing.Loc,
             Loc = Loc.Join(opening.Loc, closing.Loc),
+        };
+    }
+
+    private AstIf If(Token kwIf)
+    {
+        var predicate =
+            Expr(minPower: PowerLevel.Lowest, fallbackDesc: Parser.Problems.ExpectedPredicate);
+
+        return lexer.Match(PQuestion, out var ternaryThen)
+            ? IfTernary(kwIf, predicate, ternaryThen)
+            : IfNormal(kwIf, predicate);
+    }
+
+    private AstIf IfNormal(Token kwIf, IAstExpr predicate)
+    {
+        IAstExpr thenBlock;
+        if (lexer.Match(PBraceOpen, out var opening)) {
+            thenBlock = Block(opening);
+        }
+        else {
+            thenBlock = new AstMissing { Loc = Loc.FromLength(predicate.Loc.End(), 0) };
+            problems.Report(Parser.Problems.ExpectedIfBody, thenBlock.Loc);
+        }
+
+        AstElse? elseBlock = null;
+        if (lexer.Match(KwElse, out var kwElse)) {
+            IAstExpr body;
+            if (lexer.Match(PBraceOpen, out var elseOpening)) {
+                body = Block(elseOpening);
+            }
+            else if (lexer.Match(KwIf, out var elseKwIf)) {
+                body = If(elseKwIf);
+            }
+            else {
+                body = new AstMissing { Loc = Loc.FromLength(kwElse.Loc.End(), 0) };
+                problems.Report(Parser.Problems.ExpectedElseBody, body.Loc);
+            }
+
+            elseBlock = new AstElse {
+                KwElseLoc = kwElse.Loc,
+                Body = body,
+                Loc = Loc.Join(kwElse.Loc, body.Loc),
+            };
+        }
+
+        return new AstIf {
+            Predicate = predicate,
+            Then = thenBlock,
+            Else = elseBlock,
+            KwIfLoc = kwIf.Loc,
+            Loc = Loc.Join(kwIf.Loc, elseBlock?.Loc ?? thenBlock.Loc),
+        };
+    }
+
+    private AstIf IfTernary(Token kwIf, IAstExpr predicate, Token ternaryThen)
+    {
+        var thenExpr =
+            Expr(
+                minPower: PowerLevel.Lowest,
+                fallbackDesc: Parser.Problems.ExpectedExprInTernaryThen,
+                out var thenHasBlock
+            );
+
+        if (thenHasBlock) {
+            problems.Report(Parser.Problems.BlockInTernary, thenExpr.Loc);
+        }
+
+        AstElse? elsePart;
+        if (lexer.Match(PColon, out var kwElse)) {
+            var elseExpr = Expr(
+                minPower: PowerLevel.Lowest,
+                fallbackDesc: Parser.Problems.ExpectedExprInTernaryElse,
+                out var elseHasBlock
+            );
+
+            if (elseHasBlock) {
+                problems.Report(Parser.Problems.BlockInTernary, elseExpr.Loc);
+            }
+
+            elsePart = new AstElse {
+                KwElseLoc = kwElse.Loc,
+                Body = elseExpr,
+                Loc = Loc.Join(kwElse.Loc, elseExpr.Loc),
+            };
+        }
+        else {
+            elsePart = null;
+            problems.Report(
+                Parser.Problems.ExpectedTernaryElse,
+                Loc.FromLength(thenExpr.Loc.End(), 0)
+            );
+        }
+
+        return new AstIf {
+            KwIfLoc = kwIf.Loc,
+            Predicate = predicate,
+            TernaryThenLoc = ternaryThen.Loc,
+            Then = thenExpr,
+            Else = elsePart,
+            Loc = Loc.Join(kwIf.Loc, elsePart?.Loc ?? thenExpr.Loc),
         };
     }
 
@@ -507,6 +676,21 @@ file sealed class ParserLexer(ImmutableArray<Token> tokens, ProblemArrayBuilder 
 
     [Pure]
     public bool CheckNot(TokenTag tag) => !(IsEmpty || Check(tag));
+
+    [MustUseReturnValue]
+    public bool Match(TokenTag tag, out Token token)
+    {
+        var ok = Check(tag);
+        if (ok) {
+            token = Current;
+            MoveNext();
+        }
+        else {
+            token = default;
+        }
+
+        return ok;
+    }
 
     [MustUseReturnValue]
     public bool MatchNewline() => _lastNewline is not null || IsEmpty;

@@ -1,0 +1,23 @@
+﻿{
+  target:
+@ Script (location: 0:10)
+└── Stmts: 
+    @ Stmts (location: 0:10)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:10)
+            └── Expr: 
+                @ If (location: 0:10)
+                ├── Else: ∅
+                ├── Predicate: 
+                │   @ True (location: 3:4)
+                ├── Then: 
+                │   @ Block (location: 8:2)
+                │   ├── Stmts: 
+                │   │   @ Stmts (location: 0:0)
+                │   │   └── Items: (count: 0)
+                │   ├── ClosingLoc: 9:1
+                │   └── OpeningLoc: 8:1
+                ├── KwIfLoc: 0:2
+                └── TernaryThenLoc: ∅,
+  problems: []
+}
