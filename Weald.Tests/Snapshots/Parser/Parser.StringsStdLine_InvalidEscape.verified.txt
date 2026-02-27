@@ -1,0 +1,186 @@
+﻿{
+  target:
+@ Script (location: 0:77)
+└── Stmts: 
+    @ Stmts (location: 0:77)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:77)
+            └── Expr: 
+                @ String (location: 0:77)
+                ├── Interpreted: " zxaZ 000000000gg0065 }ffffff}0065x}}"
+                ├── ClosingLoc: 76:1
+                ├── ContentLoc: 1:75
+                └── OpeningLoc: 0:1,
+  problems: [
+    {
+      Desc: {
+        Id: syntax/invalid-escape,
+        Message: unrecognised escape sequence '\a'
+      },
+      Loc: {
+        Start: 1,
+        Length: 2
+      }
+    },
+    {
+      Desc: {
+        Id: syntax/invalid-escape,
+        Message: unrecognised escape sequence '\b'
+      },
+      Loc: {
+        Start: 3,
+        Length: 2
+      }
+    },
+    {
+      Desc: {
+        Id: syntax/invalid-escape,
+        Message: unrecognised escape sequence '\{'
+      },
+      Loc: {
+        Start: 5,
+        Length: 2
+      }
+    },
+    {
+      Desc: {
+        Id: syntax/invalid-escape,
+        Message: invalid \x escape sequence; expected exactly 2 hexadecimal digits
+      },
+      Loc: {
+        Start: 8,
+        Length: 4
+      }
+    },
+    {
+      Desc: {
+        Id: syntax/invalid-escape,
+        Message: invalid \x escape sequence; expected exactly 2 hexadecimal digits
+      },
+      Loc: {
+        Start: 10,
+        Length: 4
+      }
+    },
+    {
+      Desc: {
+        Id: syntax/invalid-escape,
+        Message: invalid \x escape sequence; expected exactly 2 hexadecimal digits
+      },
+      Loc: {
+        Start: 14,
+        Length: 4
+      }
+    },
+    {
+      Desc: {
+        Id: syntax/invalid-escape,
+        Message: invalid \u escape sequence; '\u0\' is not a Unicode code point
+      },
+      Loc: {
+        Start: 19,
+        Length: 6
+      }
+    },
+    {
+      Desc: {
+        Id: syntax/invalid-escape,
+        Message: invalid \u escape sequence; '0\u0' is not a Unicode code point
+      },
+      Loc: {
+        Start: 21,
+        Length: 6
+      }
+    },
+    {
+      Desc: {
+        Id: syntax/invalid-escape,
+        Message: invalid \u escape sequence; '00\u' is not a Unicode code point
+      },
+      Loc: {
+        Start: 24,
+        Length: 6
+      }
+    },
+    {
+      Desc: {
+        Id: syntax/invalid-escape,
+        Message: invalid \u escape sequence; '000\' is not a Unicode code point
+      },
+      Loc: {
+        Start: 28,
+        Length: 6
+      }
+    },
+    {
+      Desc: {
+        Id: syntax/invalid-escape,
+        Message: invalid \u escape sequence; '000g' is not a Unicode code point
+      },
+      Loc: {
+        Start: 33,
+        Length: 6
+      }
+    },
+    {
+      Desc: {
+        Id: syntax/invalid-escape,
+        Message: invalid \u escape sequence; 'g006' is not a Unicode code point
+      },
+      Loc: {
+        Start: 39,
+        Length: 6
+      }
+    },
+    {
+      Desc: {
+        Id: syntax/invalid-escape,
+        Message: invalid \u{} escape sequence; expected up to 6 hexadecimal digits within braces
+      },
+      Loc: {
+        Start: 47,
+        Length: 4
+      }
+    },
+    {
+      Desc: {
+        Id: syntax/invalid-escape,
+        Message: invalid \u{} escape sequence; 'ffffff' is not a Unicode code point
+      },
+      Loc: {
+        Start: 51,
+        Length: 10
+      }
+    },
+    {
+      Desc: {
+        Id: syntax/invalid-escape,
+        Message: invalid \u{} escape sequence; expected up to 6 hexadecimal digits within braces
+      },
+      Loc: {
+        Start: 61,
+        Length: 9
+      }
+    },
+    {
+      Desc: {
+        Id: syntax/invalid-escape,
+        Message: invalid \u{} escape sequence; 'x' is not a Unicode code point
+      },
+      Loc: {
+        Start: 68,
+        Length: 5
+      }
+    },
+    {
+      Desc: {
+        Id: syntax/invalid-escape,
+        Message: invalid \u escape sequence; expected exactly 4 hexadecimal digits
+      },
+      Loc: {
+        Start: 73,
+        Length: 3
+      }
+    }
+  ]
+}

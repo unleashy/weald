@@ -1,0 +1,15 @@
+﻿{
+  target:
+@ Script (location: 0:13)
+└── Stmts: 
+    @ Stmts (location: 0:12)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 1:11)
+            └── Expr: 
+                @ String (location: 1:11)
+                ├── Interpreted: "abcd efgh"
+                ├── ClosingLoc: 11:1
+                ├── ContentLoc: 2:9
+                └── OpeningLoc: 1:1,
+  problems: []
+}

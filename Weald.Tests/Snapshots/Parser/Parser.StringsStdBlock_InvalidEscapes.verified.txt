@@ -1,0 +1,36 @@
+﻿{
+  target:
+@ Script (location: 0:18)
+└── Stmts: 
+    @ Stmts (location: 0:18)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:18)
+            └── Expr: 
+                @ String (location: 0:18)
+                ├── Interpreted: "\nd"
+                ├── ClosingLoc: 15:3
+                ├── ContentLoc: 3:12
+                └── OpeningLoc: 0:3,
+  problems: [
+    {
+      Desc: {
+        Id: syntax/invalid-escape,
+        Message: unrecognised escape sequence '\o'
+      },
+      Loc: {
+        Start: 6,
+        Length: 2
+      }
+    },
+    {
+      Desc: {
+        Id: syntax/invalid-escape,
+        Message: invalid \x escape sequence; expected exactly 2 hexadecimal digits
+      },
+      Loc: {
+        Start: 11,
+        Length: 3
+      }
+    }
+  ]
+}

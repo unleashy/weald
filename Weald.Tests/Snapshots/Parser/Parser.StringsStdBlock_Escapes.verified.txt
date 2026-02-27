@@ -1,0 +1,15 @@
+﻿{
+  target:
+@ Script (location: 0:68)
+└── Stmts: 
+    @ Stmts (location: 0:68)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 0:68)
+            └── Expr: 
+                @ String (location: 0:68)
+                ├── Interpreted: "\t\"escapes are taken\"\n\n\"literally for\"\n \"indent removal\""
+                ├── ClosingLoc: 65:3
+                ├── ContentLoc: 3:62
+                └── OpeningLoc: 0:3,
+  problems: []
+}

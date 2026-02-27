@@ -1,5 +1,7 @@
-﻿using System.Collections.Immutable;
+﻿using System.Buffers;
+using System.Collections.Immutable;
 using System.Globalization;
+using System.Text;
 using static Weald.Core.TokenTag;
 
 namespace Weald.Core;
@@ -118,6 +120,36 @@ public static class Parser
         public static readonly ProblemDesc InvalidFloat = new() {
             Id = "syntax/invalid-float",
             Message = "float literal cannot be accurately parsed",
+        };
+
+        public static ProblemDesc InvalidEscape(Rune rune) => new() {
+            Id = "syntax/invalid-escape",
+            Message = $@"unrecognised escape sequence '\{Rune.Escape(rune)}'",
+        };
+
+        public static readonly ProblemDesc InvalidHexEscape = new() {
+            Id = "syntax/invalid-escape",
+            Message = @"invalid \x escape sequence; expected exactly 2 hexadecimal digits",
+        };
+
+        public static readonly ProblemDesc InvalidUnicodeEscape = new() {
+            Id = "syntax/invalid-escape",
+            Message = @"invalid \u escape sequence; expected exactly 4 hexadecimal digits",
+        };
+
+        public static ProblemDesc InvalidUnicodeEscapePoint(ReadOnlySpan<char> hex) => new() {
+            Id = "syntax/invalid-escape",
+            Message = $@"invalid \u escape sequence; '{hex}' is not a Unicode code point",
+        };
+
+        public static readonly ProblemDesc InvalidUnicodeBraceEscape = new() {
+            Id = "syntax/invalid-escape",
+            Message = @"invalid \u{} escape sequence; expected up to 6 hexadecimal digits within braces",
+        };
+
+        public static ProblemDesc InvalidUnicodeBraceEscapePoint(ReadOnlySpan<char> hex) => new() {
+            Id = "syntax/invalid-escape",
+            Message = $@"invalid \u{{}} escape sequence; '{hex}' is not a Unicode code point",
         };
     }
 }
@@ -546,9 +578,320 @@ file sealed class Core(ParserLexer lexer, ProblemArrayBuilder problems)
         return new AstFloat { Value = value, Loc = token.Loc };
     }
 
-    private static AstString String(Token token)
+    private AstString String(Token token)
     {
-        throw new NotImplementedException();
+        var body = token.Text.AssertPresence();
+
+        if (body.StartsWith("```", StringComparison.Ordinal)) {
+            return StringRawBlock(token, body);
+        }
+        else if (body.StartsWith('`')) {
+            return StringRawLine(token, body);
+        }
+        else if (body.StartsWith("\"\"\"", StringComparison.Ordinal)) {
+            return StringStdBlock(token, body);
+        }
+        else {
+            Debug.Assert(body.StartsWith('"'));
+            return StringStdLine(token, body);
+        }
+    }
+
+    private AstString StringStdLine(Token token, string body)
+    {
+        const string quote = "\"";
+
+        var (openingLoc, contentLoc, closingLoc) = StringLocs(token, quote);
+
+        string? interpreted;
+        if (body.Contains('\\', StringComparison.Ordinal)) {
+            interpreted = Unescape(body.AsSpan(quote.Length .. ^quote.Length), body, token.Loc);
+        }
+        else {
+            interpreted = body[quote.Length .. ^quote.Length];
+        }
+
+        return new AstString {
+            Interpreted = interpreted,
+            OpeningLoc = openingLoc,
+            ContentLoc = contentLoc,
+            ClosingLoc = closingLoc,
+            Loc = token.Loc,
+        };
+    }
+
+    private static AstString StringRawLine(Token token, string body)
+    {
+        const string quote = "`";
+
+        var (openingLoc, contentLoc, closingLoc) = StringLocs(token, quote);
+
+        return new AstString {
+            Interpreted = body,
+            OpeningLoc = openingLoc,
+            ContentLoc = contentLoc,
+            ClosingLoc = closingLoc,
+            Loc = token.Loc,
+        };
+    }
+
+    private AstString StringStdBlock(Token token, string body)
+    {
+        const string quote = "\"\"\"";
+
+        var (openingLoc, contentLoc, closingLoc) = StringLocs(token, quote);
+
+        var interpreted = Unescape(Unindent(body, quote), body, token.Loc);
+
+        return new AstString {
+            Interpreted = interpreted,
+            OpeningLoc = openingLoc,
+            ContentLoc = contentLoc,
+            ClosingLoc = closingLoc,
+            Loc = token.Loc,
+        };
+    }
+
+    private static AstString StringRawBlock(Token token, string body)
+    {
+        const string quote = "```";
+
+        var (openingLoc, contentLoc, closingLoc) = StringLocs(token, quote);
+
+        var interpreted = Unindent(body, quote);
+
+        return new AstString {
+            Interpreted = interpreted,
+            OpeningLoc = openingLoc,
+            ContentLoc = contentLoc,
+            ClosingLoc = closingLoc,
+            Loc = token.Loc,
+        };
+    }
+
+    private static readonly SearchValues<char> Whitespace = SearchValues.Create(" \t");
+
+    private static string Unindent(string body, string quote)
+    {
+        var raw = body.AsSpan(quote.Length .. ^quote.Length);
+        var trimmed = raw.Trim(" \t").Trim("\n\r");
+
+        // while EnumerateLines considers stuff like FF/NEL/LS/PS as newlines, that's okay because
+        // the lexer explicitly forbids those within strings, so we can freely use EnumerateLines
+        // to split the span at LF, CR, and CRLF, just like we want!
+        Debug.Assert(!trimmed.ContainsAny(SearchValues.Create("\f\u0085\u2028\u2029")));
+        var lines = trimmed.EnumerateLines();
+
+        ReadOnlySpan<char> commonPrefix = "";
+        var noPrefix = true;
+        foreach (var line in lines) {
+            var prefix = line.TakePrefix(Whitespace);
+            if (line != prefix && (noPrefix || commonPrefix.StartsWith(prefix))) {
+                commonPrefix = prefix;
+                noPrefix = false;
+            }
+        }
+
+        var joined = new StringBuilder();
+        foreach (var line in lines) {
+            if (line != line.TakePrefix(Whitespace)) {
+                joined.Append(line[commonPrefix.Length ..]);
+            }
+
+            joined.Append('\n');
+        }
+
+        // remove last \n
+        joined.Length -= 1;
+
+        return joined.ToString();
+    }
+
+    private string Unescape(ReadOnlySpan<char> str, ReadOnlySpan<char> original, Loc loc)
+    {
+        var result = new StringBuilder();
+
+        int nextEscape;
+        var escapeIndex = 0;
+        while ((nextEscape = str.IndexOf('\\')) != -1) {
+            var escape = str[nextEscape + 1];
+
+            result.Append(str[0 .. nextEscape]);
+            str = str[(nextEscape + 2) ..];
+
+            if (UnescapeNext(ref str, original, escape, escapeIndex, loc) is {} rune) {
+                result.Append(rune.ToString());
+            }
+
+            ++escapeIndex;
+        }
+
+        result.Append(str);
+        return result.ToString();
+    }
+
+    private Rune? UnescapeNext(
+        ref ReadOnlySpan<char> str,
+        ReadOnlySpan<char> original,
+        char escape,
+        int escapeIndex,
+        Loc loc
+    )
+    {
+        switch (escape) {
+            case '"':  return new Rune('"');
+            case '\\': return new Rune('\\');
+            case 'e':  return new Rune('\e');
+            case 'n':  return new Rune('\n');
+            case 'r':  return new Rune('\r');
+            case 't':  return new Rune('\t');
+
+            case '\n' or '\r': {
+                var nextNonWs = str.IndexOfAnyExcept(' ', '\t');
+                if (nextNonWs == -1) nextNonWs = str.Length;
+                str = str[nextNonWs ..];
+                return null;
+            }
+
+            case 'x': {
+                return UnescapeHex(ref str, original, escapeIndex, loc);
+            }
+
+            case 'u': {
+                if (str.Length > 0 && str[0] == '{') {
+                    return UnescapeUnicodeBraced(ref str, original, escapeIndex, loc);
+                }
+                else {
+                    return UnescapeUnicode(ref str, original, escapeIndex, loc);
+                }
+            }
+
+            default: {
+                var escapeLoc = FindEscapeLoc(original, escapeIndex, escapeLen: 2, loc);
+                problems.Report(Parser.Problems.InvalidEscape(new Rune(escape)), escapeLoc);
+                return null;
+            }
+        }
+    }
+
+    private Rune? UnescapeHex(
+        ref ReadOnlySpan<char> str,
+        ReadOnlySpan<char> original,
+        int escapeIndex,
+        Loc loc
+    )
+    {
+        var next = int.Min(2, str.Length);
+        var hex = str[0 .. next];
+        if (hex.Length == 2 && Rune.ParseHex(hex) is {} rune) {
+            str = str[next ..];
+            return rune;
+        }
+        else {
+            var escapeLoc = FindEscapeLoc(original, escapeIndex, escapeLen: 2 + hex.Length, loc);
+            problems.Report(Parser.Problems.InvalidHexEscape, escapeLoc);
+            return null;
+        }
+    }
+
+    private Rune? UnescapeUnicode(
+        ref ReadOnlySpan<char> str,
+        ReadOnlySpan<char> original,
+        int escapeIndex,
+        Loc loc
+    )
+    {
+        var next = int.Min(4, str.Length);
+        var hex = str[0 .. next];
+
+        if (hex.Length == 4) {
+            if (Rune.ParseHex(hex) is {} rune) {
+                str = str[next .. ];
+                return rune;
+            }
+            else {
+                problems.Report(
+                    Parser.Problems.InvalidUnicodeEscapePoint(hex),
+                    FindEscapeLoc(original, escapeIndex, escapeLen: 2 + hex.Length, loc)
+                );
+            }
+        }
+        else {
+            problems.Report(
+                Parser.Problems.InvalidUnicodeEscape,
+                FindEscapeLoc(original, escapeIndex, escapeLen: 2 + hex.Length, loc)
+            );
+        }
+
+        return null;
+    }
+
+    private Rune? UnescapeUnicodeBraced(
+        ref ReadOnlySpan<char> str,
+        ReadOnlySpan<char> original,
+        int escapeIndex,
+        Loc loc
+    )
+    {
+        Debug.Assert(str[0] == '{');
+        str = str[1 ..];
+
+        var closing = str.IndexOf('}');
+        var hexEnd = closing == -1 ? int.Min(str.Length, 6) : int.Min(closing, 6);
+        var hex = str[0 .. hexEnd];
+
+        // calculate the full escape sequence length including \u{ and }
+        var escapeLen = 3 + hex.Length + (closing is >= 0 and <= 6 ? 1 : 0);
+
+        if (hex.Length is >= 1 and <= 6 && closing is >= 0 and <= 6) {
+            if (Rune.ParseHex(hex) is {} rune) {
+                str = str[(hexEnd + 1) ..];
+                return rune;
+            }
+            else {
+                problems.Report(
+                    Parser.Problems.InvalidUnicodeBraceEscapePoint(hex),
+                    FindEscapeLoc(original, escapeIndex, escapeLen, loc)
+                );
+            }
+        }
+        else {
+            problems.Report(
+                Parser.Problems.InvalidUnicodeBraceEscape,
+                FindEscapeLoc(original, escapeIndex, escapeLen, loc)
+            );
+        }
+
+        return null;
+    }
+
+    private static (Loc Opening, Loc Content, Loc Closing) StringLocs(Token token, string quote)
+    {
+        var opening = Loc.FromLength(token.Loc.Start, quote.Length);
+        var closing = Loc.FromLength(token.Loc.End() - quote.Length, quote.Length);
+        var content = Loc.FromRange(opening.End(), closing.Start);
+        return (opening, content, closing);
+    }
+
+    private static Loc FindEscapeLoc(
+        ReadOnlySpan<char> str,
+        int escapeIndex,
+        int escapeLen,
+        Loc loc
+    )
+    {
+        var actualEscapeIndex = -1;
+        for (var i = 0; i < str.Length; ++i) {
+            var c = str[i];
+            if (c == '\\' && ++actualEscapeIndex == escapeIndex) {
+                actualEscapeIndex = i;
+                break;
+            }
+        }
+
+        Debug.Assert(actualEscapeIndex != -1);
+
+        return Loc.FromLength(loc.Start + actualEscapeIndex, escapeLen);
     }
 }
 

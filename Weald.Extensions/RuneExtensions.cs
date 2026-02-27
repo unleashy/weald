@@ -12,7 +12,7 @@ public static class RuneExtensions
         public static Rune? ParseHex(ReadOnlySpan<char> hex) =>
             int.TryParse(
                 hex,
-                NumberStyles.HexNumber,
+                NumberStyles.AllowHexSpecifier,
                 CultureInfo.InvariantCulture,
                 out var value
             ) && Rune.TryCreate(value, out var rune)

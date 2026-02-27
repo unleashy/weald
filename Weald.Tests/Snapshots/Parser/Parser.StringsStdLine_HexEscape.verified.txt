@@ -1,0 +1,15 @@
+﻿{
+  target:
+@ Script (location: 0:28)
+└── Stmts: 
+    @ Stmts (location: 0:27)
+    └── Items: (count: 1)
+        └── @ StmtExpr (location: 1:26)
+            └── Expr: 
+                @ String (location: 1:26)
+                ├── Interpreted: "Ò\x83éÿ\x10\x0F"
+                ├── ClosingLoc: 26:1
+                ├── ContentLoc: 2:24
+                └── OpeningLoc: 1:1,
+  problems: []
+}

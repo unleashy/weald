@@ -12,15 +12,19 @@ public class ParserTests : BaseTest
         Settings.UseTypeName("Parser");
     }
 
-    private static SettingsTask Verify(string text)
+    private static Parser.Result Parse(string text)
     {
         var source = Source.FromString("", text);
         var lexer = Lexer.Tokenise(source);
-        var result = Parser.Parse(lexer);
+        return Parser.Parse(lexer);
+    }
 
+    private static SettingsTask Verify(string text)
+    {
+        var (ast, problems) = Parse(text);
         return Verifier
-            .Verify(AstPrinter.Print(result.Ast), Settings)
-            .AppendValue("problems", result.Problems);
+            .Verify(AstPrinter.Print(ast), Settings)
+            .AppendValue("problems", problems);
     }
 
     [Test]
@@ -83,6 +87,153 @@ public class ParserTests : BaseTest
     [TestCase("OverflowPos", "+1.8e308")]
     [TestCase("OverflowNeg", "-1.8e308")]
     public Task Floats(string name, string sut) => Verify(sut).UseTextForParameters(name);
+
+    [TestCase("Empty", """ "" """)]
+    [TestCase("NoEscapes", """ "abcd efgh" """)]
+    [TestCase("SimpleEscapes", """ "\"\\\e \n\r\t" """)]
+    [TestCase("ContinuationEscape",
+        """
+        "foo\
+         bar"
+        """
+    )]
+    [TestCase("HexEscape", """ "\xD2\x83\xE9\xff\x10\x0f" """)]
+    [TestCase("UnicodeEscape", """ "\u1234\u5678\u9aBc\ufeff" """)]
+    [TestCase("UnicodeBraceEscape", """ "\u{0}\u{0065}\u{10FFFF}\u{00FE4C}" """)]
+    [TestCase("InvalidEscape",
+        """
+        "\a\b\{ \x\xzx\xaZ \u\u0\u00\u000\u000g\ug0065 \u{}\u{ffffff}\u{0065\u{x}\u}"
+        """
+    )]
+    public Task StringsStdLine(string name, string sut) => Verify(sut).UseTextForParameters(name);
+
+    [TestCase("Empty", "``")]
+    [TestCase("Simple", """`foo"bar`""")]
+    [TestCase("Escapes", """`\"\\\e\n\r\t`""")]
+    public Task StringsRawLine(string name, string sut) => Verify(sut).UseTextForParameters(name);
+
+    [TestCase("Empty",
+        """""""
+        """"""
+        """""""
+    )]
+    [TestCase("Simple",
+        """"
+        """foobar"""
+        """"
+    )]
+    [TestCase("SingleLine",
+        """"
+        """
+        foobar
+        """
+        """"
+    )]
+    [TestCase("MultiLineInc",
+        """"
+        """
+        foo
+          bar
+            baz
+        """
+        """"
+    )]
+    [TestCase("MultiLineDec",
+        """"
+        """
+            foo
+          bar
+        baz
+        """
+        """"
+    )]
+    [TestCase("MultiLineIndented",
+        """"
+        """
+          foo
+          bar
+          baz
+        """
+        """"
+    )]
+    [TestCase("Spacing",
+        """"
+        """
+          foo
+
+          bar
+
+          baz
+        """
+        """"
+    )]
+    [TestCase("Escapes",
+        """"
+        """
+        \t"escapes are taken"
+        \n"literally for"
+        \x20"indent removal"
+        """
+        """"
+    )]
+    [TestCase("InvalidEscapes",
+        """"
+        """
+          \o
+          \xd
+        """
+        """"
+    )]
+    public Task StringsStdBlock(string name, string sut) => Verify(sut).UseTextForParameters(name);
+
+    [TestCase("Empty", "``````")]
+    [TestCase("Simple", "```foobar```")]
+    [TestCase("SingleLine",
+        """
+        ```
+        foobar
+        ```
+        """
+    )]
+    [TestCase("MultiLineInc",
+        """
+        ```
+        foo
+          bar
+            baz
+        ```
+        """
+    )]
+    [TestCase("MultiLineDec",
+        """
+        ```
+            foo
+          bar
+        baz
+        ```
+        """
+    )]
+    [TestCase("MultiLineIndented",
+        """
+        ```
+          foo
+          bar
+          baz
+        ```
+        """
+    )]
+    [TestCase("Spacing",
+        """
+        ```
+          foo
+
+          bar
+
+          baz
+        ```
+        """
+    )]
+    public Task StringsRawBlock(string name, string sut) => Verify(sut).UseTextForParameters(name);
 
     [TestCase("Empty", "{}")]
     [TestCase("Single", "{ 1 + 2 }")]
