@@ -9,6 +9,16 @@ Introduction:
 
     This document describes the language—mostly informally.
 ---
+Type system:
+  - >
+    Weald is a statically typed language, where every value has a single defined ◊i[type],
+    determined at compile time. The type denotes the interpretation of a value and defines what
+    operations can be performed on the value. The ◊i[type system] ascribes types to values, and the
+    ◊i[type checker] verifies the correctness of operations given types.
+
+  - ◊note: >
+      TODO 😔
+---
 Lexical elements:
   - >
     This chapter covers the lexical structure of the language. The ◊[source text] of a Weald program
@@ -482,6 +492,11 @@ Syntax:
         Expressions may have zero or more ◊i[operands], defined by the forms themselves. Those
         operands are used in evaluating an expression at run-time and also for typechecking an
         expression at compile time.
+
+        ◊b[Evaluation order.] By default, the operands of an expression are evaluated before the
+        expression itself, and if more than one operand can be evaluated at once, evaluation
+        proceeds from left to right. Some expressions can modify this evaluation order, but this is
+        the standard.
 
   - Primary expressions:
       - ◊syn:
