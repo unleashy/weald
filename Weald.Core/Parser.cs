@@ -8,21 +8,14 @@ namespace Weald.Core;
 
 public static class Parser
 {
-    public readonly record struct Result(AstScript Ast, ImmutableArray<Problem> Problems)
-    {
-        public bool HasProblems => Problems.Length > 0;
-    }
-
-    [Pure]
-    public static Result Parse(ImmutableArray<Token> tokens)
+    [MustUseReturnValue]
+    public static AstScript Parse(ImmutableArray<Token> tokens, ProblemList problems)
     {
         if (tokens.IsDefaultOrEmpty || tokens[^1].Tag != End) {
             throw new ArgumentException("the last token must be End", nameof(tokens));
         }
 
-        var problems = new ProblemArrayBuilder();
-        var ast = new Core(new ParserLexer(tokens, problems), problems).Parse();
-        return new Result(ast, problems.Drain());
+        return new Core(new ParserLexer(tokens, problems), problems).Parse();
     }
 
     public static class Problems
@@ -154,7 +147,7 @@ public static class Parser
     }
 }
 
-file sealed class Core(ParserLexer lexer, ProblemArrayBuilder problems)
+file sealed class Core(ParserLexer lexer, ProblemList problems)
 {
     private Stack<TokenTag> _breakpoints = new();
 
@@ -966,7 +959,7 @@ file readonly record struct BinaryOperator(
         new(name, power, power, token.Tag, token.Loc);
 }
 
-file sealed class ParserLexer(ImmutableArray<Token> tokens, ProblemArrayBuilder problems)
+file sealed class ParserLexer(ImmutableArray<Token> tokens, ProblemList problems)
 {
     private ImmutableArray<Token> _tokens = tokens;
     private Token? _lastNewline;

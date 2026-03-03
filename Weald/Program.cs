@@ -3,15 +3,18 @@ using Weald.Core;
 
 Console.WriteLine($"Weald 🌳 v{GetVersion()} // Ctrl+C or .exit to quit");
 Repl(line => {
+    var problems = new ProblemList();
     var source = Source.FromString("<repl>", line);
-    var result = Parser.Parse(Lexer.Tokenise(source));
+    var ast = Syntax.Analyse(source, problems);
 
-    Console.WriteLine(AstPrinter.Print(result.Ast));
+    Console.WriteLine(AstPrinter.Print(ast));
 
-    var sourceInfo = SourceInfo.Create(source);
-    foreach (var problem in result.Problems) {
-        Console.Error.WriteLine();
-        Console.Error.WriteLine(problem.FormatForConsole(sourceInfo));
+    if (!problems.IsEmpty) {
+        var sourceInfo = SourceInfo.Create(source);
+        foreach (var problem in problems) {
+            Console.Error.WriteLine();
+            Console.Error.WriteLine(problem.FormatForConsole(sourceInfo));
+        }
     }
 });
 

@@ -12,16 +12,10 @@ public class ParserTests : BaseTest
         Settings.UseTypeName("Parser");
     }
 
-    private static Parser.Result Parse(string text)
-    {
-        var source = Source.FromString("", text);
-        var lexer = Lexer.Tokenise(source);
-        return Parser.Parse(lexer);
-    }
-
     private static SettingsTask Verify(string text)
     {
-        var (ast, problems) = Parse(text);
+        var problems = new ProblemList();
+        var ast = Syntax.Analyse(Source.FromString("", text), problems);
         return Verifier
             .Verify(AstPrinter.Print(ast), Settings)
             .AppendValue("problems", problems);

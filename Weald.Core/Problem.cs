@@ -1,4 +1,5 @@
-﻿using System.Collections.Immutable;
+﻿using System.Collections;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
@@ -56,11 +57,14 @@ public readonly record struct Problem(ProblemDesc Desc, Loc Loc)
     }
 }
 
-public sealed class ProblemArrayBuilder
+public sealed class ProblemList : IEnumerable<Problem>
 {
-    private ImmutableArray<Problem>.Builder _problems = ImmutableArray.CreateBuilder<Problem>();
+    private List<Problem> _problems = [];
 
-    public bool IsEmpty => _problems.Count == 0;
+    public bool IsEmpty {
+        [Pure]
+        get => _problems.Count == 0;
+    }
 
     public void Report(string id, string message, Loc loc)
     {
@@ -74,5 +78,6 @@ public sealed class ProblemArrayBuilder
 
     public void Report(Problem problem) => _problems.Add(problem);
 
-    public ImmutableArray<Problem> Drain() => _problems.DrainToImmutable();
+    public IEnumerator<Problem> GetEnumerator() => _problems.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
