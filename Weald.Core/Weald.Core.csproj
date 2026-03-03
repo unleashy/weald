@@ -3,6 +3,9 @@
         <TargetFramework>net10.0</TargetFramework>
         <NoWarn>CS8524</NoWarn>
         <WarningsAsErrors>CS8509</WarningsAsErrors>
+
+        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+        <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)generated</CompilerGeneratedFilesOutputPath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -12,5 +15,11 @@
     <ItemGroup>
         <ProjectReference Include="..\Weald.Extensions\Weald.Extensions.csproj" PrivateAssets="all"/>
         <ProjectReference Include="..\Weald.UnicodeTables\Weald.UnicodeTables.csproj" PrivateAssets="all"/>
+        <ProjectReference
+            Include="..\Weald.Generators\Weald.Generators.csproj"
+            PrivateAssets="all"
+            OutputItemType="Analyzer"
+            ReferenceOutputAssembly="false"
+        />
     </ItemGroup>
 </Project>

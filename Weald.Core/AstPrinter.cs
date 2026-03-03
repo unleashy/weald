@@ -102,14 +102,10 @@ public sealed class AstPrinter
 
     private static (string Name, (string Name, object? Value)[] Props) GetPrinterData(IAst ast)
     {
-        var ty = ast.GetType();
+        var name = ast.DisplayName();
 
-        var name = ty.Name.StartsWith("Ast", StringComparison.Ordinal) ? ty.Name[3 ..] : ty.Name;
-
-        var props = ty
-            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+        var props = ast.Props()
             .Where(p => p.Name != "Loc")
-            .Select(p => (p.Name, p.GetValue(ast)))
             .OrderBy(p => p.Name, ByNameWithLocsAtEnd)
             .ToArray();
 

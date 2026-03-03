@@ -1,120 +1,116 @@
-﻿// ReSharper disable UnusedType.Global
-// ReSharper disable UnusedMember.Global
-// ReSharper disable UnusedAutoPropertyAccessor.Global
-// ReSharper disable ClassNeverInstantiated.Global
-using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Collections.Immutable;
 
 namespace Weald.Core;
 
-[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
 public interface IAst
 {
     public Loc Loc { get; }
+
+    public IEnumerable<(string Name, object? Value)> Props();
+    public string DisplayName();
+    public IEnumerable<IAst?> Children();
 }
 
-public sealed record AstName : IAst
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = false)]
+public sealed class GenAstAttribute : Attribute;
+
+[GenAst]
+public sealed partial record AstName : IAst
 {
     public required string Value { get; init; }
-    public required Loc Loc { get; init; }
 }
 
 #region Expressions
 
 public interface IAstExpr : IAst;
 
-public sealed record AstMissing : IAstExpr
-{
-    public required Loc Loc { get; init; }
-}
+[GenAst]
+public sealed partial record AstMissing : IAstExpr;
 
-public sealed record AstTrue : IAstExpr
-{
-    public required Loc Loc { get; init; }
-}
+[GenAst]
+public sealed partial record AstTrue : IAstExpr;
 
-public sealed record AstFalse : IAstExpr
-{
-    public required Loc Loc { get; init; }
-}
+[GenAst]
+public sealed partial record AstFalse : IAstExpr;
 
-public sealed record AstInt : IAstExpr
+[GenAst]
+public sealed partial record AstInt : IAstExpr
 {
     public required Int128 Value { get; init; }
-    public required Loc Loc { get; init; }
 }
 
-public sealed record AstFloat : IAstExpr
+[GenAst]
+public sealed partial record AstFloat : IAstExpr
 {
     public required double Value { get; init; }
-    public required Loc Loc { get; init; }
 }
 
-public sealed record AstString : IAstExpr
+[GenAst]
+public sealed partial record AstString : IAstExpr
 {
     public required Loc OpeningLoc { get; init; }
     public required string Interpreted { get; init; }
     public required Loc ContentLoc { get; init; }
     public required Loc ClosingLoc { get; init; }
-    public required Loc Loc { get; init; }
 }
 
-public sealed record AstVariableRead : IAstExpr
+[GenAst]
+public sealed partial record AstVariableRead : IAstExpr
 {
     public required string Name { get; init; }
-    public required Loc Loc { get; init; }
 }
 
-public sealed record AstGroup : IAstExpr
+[GenAst]
+public sealed partial record AstGroup : IAstExpr
 {
     public required Loc OpeningLoc { get; init; }
     public required IAstExpr Body { get; init; }
     public required Loc ClosingLoc { get; init; }
-    public required Loc Loc { get; init; }
 }
 
-public sealed record AstBlock : IAstExpr
+[GenAst]
+public sealed partial record AstBlock : IAstExpr
 {
     public required Loc OpeningLoc { get; init; }
     public required AstStmts Stmts { get; init; }
     public required Loc ClosingLoc { get; init; }
-    public required Loc Loc { get; init; }
 }
 
-public sealed record AstIf : IAstExpr
+[GenAst]
+public sealed partial record AstIf : IAstExpr
 {
     public required Loc KwIfLoc { get; init; }
     public required IAstExpr Predicate { get; init; }
     public Loc? TernaryThenLoc { get; init; }
     public required IAstExpr Then { get; init; }
     public AstElse? Else { get; init; }
-    public required Loc Loc { get; init; }
 }
 
-public sealed record AstElse : IAst
+[GenAst]
+public sealed partial record AstElse : IAst
 {
     public required Loc KwElseLoc { get; init; }
     public required IAstExpr Body { get; init; }
-    public required Loc Loc { get; init; }
 }
 
-public sealed record AstAnd : IAstExpr
+[GenAst]
+public sealed partial record AstAnd : IAstExpr
 {
     public required IAstExpr Left { get; init; }
     public required Loc OperatorLoc { get; init; }
     public required IAstExpr Right { get; init; }
-    public required Loc Loc { get; init; }
 }
 
-public sealed record AstOr : IAstExpr
+[GenAst]
+public sealed partial record AstOr : IAstExpr
 {
     public required IAstExpr Left { get; init; }
     public required Loc OperatorLoc { get; init; }
     public required IAstExpr Right { get; init; }
-    public required Loc Loc { get; init; }
 }
 
-public sealed record AstCall : IAstExpr
+[GenAst]
+public sealed partial record AstCall : IAstExpr
 {
     public required IAstExpr Receiver { get; init; }
     public Loc? OperatorLoc { get; init; }
@@ -122,13 +118,12 @@ public sealed record AstCall : IAstExpr
     public Loc? OpeningLoc { get; init; }
     public AstArguments? Arguments { get; init; }
     public Loc? ClosingLoc { get; init; }
-    public required Loc Loc { get; init; }
 }
 
-public sealed record AstArguments : IAst
+[GenAst]
+public sealed partial record AstArguments : IAst
 {
     public required ImmutableArray<IAstExpr> Items { get; init; }
-    public required Loc Loc { get; init; }
 }
 
 #endregion Expressions
@@ -137,33 +132,33 @@ public sealed record AstArguments : IAst
 
 public interface IAstStmt : IAst;
 
-public sealed record AstStmtExpr : IAstStmt
+[GenAst]
+public sealed partial record AstStmtExpr : IAstStmt
 {
     public required IAstExpr Expr { get; init; }
-    public required Loc Loc { get; init; }
 }
 
-public sealed record AstStmts : IAst
+[GenAst]
+public sealed partial record AstStmts : IAst
 {
     public required ImmutableArray<IAstStmt> Items { get; init; }
-    public required Loc Loc { get; init; }
 }
 
 public interface IAstDecl : IAstStmt;
 
-public sealed record AstVariableDecl : IAstDecl
+[GenAst]
+public sealed partial record AstVariableDecl : IAstDecl
 {
     public required Loc KwLetLoc { get; init; }
     public required AstName Name { get; init; }
     public required Loc EqLoc { get; init; }
     public required IAstExpr Value { get; init; }
-    public required Loc Loc { get; init; }
 }
 
 #endregion Statements and declarations
 
-public sealed record AstScript : IAst
+[GenAst]
+public sealed partial record AstScript
 {
     public required AstStmts Stmts { get; init; }
-    public required Loc Loc { get; init; }
 }

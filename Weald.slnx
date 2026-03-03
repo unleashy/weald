@@ -1,6 +1,7 @@
 <Solution>
     <Project Path="Weald.Core/Weald.Core.csproj" />
     <Project Path="Weald.Extensions/Weald.Extensions.csproj" />
+    <Project Path="Weald.Generators/Weald.Generators.csproj" />
     <Project Path="Weald.Tests/Weald.Tests.csproj" />
     <Project Path="Weald.UnicodeTables/Weald.UnicodeTables.csproj" />
     <Project Path="Weald/Weald.csproj" />
