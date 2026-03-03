@@ -1,11 +1,14 @@
 ﻿using System.Reflection;
 using Weald.Core;
 
+var env = Env.Empty;
+
 Console.WriteLine($"Weald 🌳 v{GetVersion()} // Ctrl+C or .exit to quit");
 Repl(line => {
     var problems = new ProblemList();
     var source = Source.FromString("<repl>", line);
     var ast = Syntax.Analyse(source, problems);
+    env = env.Resolve(ast, problems);
 
     Console.WriteLine(AstPrinter.Print(ast));
 
