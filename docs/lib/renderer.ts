@@ -110,7 +110,7 @@ class Renderer implements IRenderer {
         }
 
         let [key, value] = entries[0];
-        if (key.startsWith("◊")) {
+        if (!key.startsWith("◊h ") && key.startsWith("◊")) {
           this.#renderTag(key.substring(1), value);
         } else {
           this.#renderSection(key, value, level);
@@ -124,6 +124,10 @@ class Renderer implements IRenderer {
   }
 
   #renderSection(header: string, value: unknown, level: number) {
+    if (header.startsWith("◊h ")) {
+      header = header.slice("◊h ".length).trim();
+    }
+
     let sections = this.#findSectionRef(header).filter((it) => it.levelStack.length === level);
     if (sections.length === 0) {
       return this.#renderError(`Section not found: '${header}'`);
@@ -572,6 +576,9 @@ class Renderer implements IRenderer {
       case "tt":
         return this.#renderTerminal(content);
 
+      case "ty":
+        return this.#renderType(content);
+
       case "u":
       case "U":
         return this.#renderUnicode(content);
@@ -591,6 +598,7 @@ class Renderer implements IRenderer {
     } else {
       let ref = this.#findSectionRef(href);
       if (ref.length === 0) {
+        console.log(this.#sectionRefs);
         return errorTag(`◊a: Unknown ref '${href}' (slug: '${slug(href)}')`);
       } else if (ref.length > 1) {
         return errorTag(`◊a: Ambiguous ref '${href}' (slug: '${slug(href)}')`);
@@ -638,6 +646,11 @@ class Renderer implements IRenderer {
     return `<code class="syntax-terminal">${s}</code>`;
   }
 
+  #renderType(s: string | undefined): string {
+    if (s === undefined) return errorTag("◊ty tag missing body");
+    return `<span class="type-expr">${s}</span>`;
+  }
+
   #renderUnicode(s: string | undefined): string {
     if (s === undefined) return errorTag("◊u tag missing body");
 
@@ -657,7 +670,7 @@ class Renderer implements IRenderer {
   #collectRefsWithLevel(children: Children, levelStack: number[]) {
     for (let child of children) {
       for (let [key, value] of Object.entries(child)) {
-        if (key.startsWith("◊")) {
+        if (!key.startsWith("◊h ") && key.startsWith("◊")) {
           if (key === "◊syn" && typeof value === "object" && value !== null) {
             this.#collectSyntaxRefs(value as Record<string, unknown>);
           }
@@ -680,18 +693,18 @@ class Renderer implements IRenderer {
   }
 
   #collectSectionRefs(name: string, children: Children, levelStack: number[]) {
-    let ref = this.#addSectionRef(name, levelStack);
-    if (!ref) {
-      this.#alert(`Duplicate section reference '${name}'`);
+    if (name.startsWith("◊h ")) {
+      name = name.slice("◊h ".length);
     }
 
+    let ref = this.#addSectionRef(name, levelStack);
     this.#collectRefsWithLevel(children, [1, ...levelStack]);
-    if (ref && this.#isNumbered(ref.name)) ++levelStack[0];
+    if (this.#isNumbered(ref.name)) ++levelStack[0];
   }
 
   #findSectionRef(name: string): SectionRef[] {
-    let nameSlug = slug(name);
-    return this.#sectionRefs.filter((s) => slug(s.name) === nameSlug);
+    let nameSlug = slug(stripTags(name));
+    return this.#sectionRefs.filter((s) => slug(stripTags(s.name)) === nameSlug);
   }
 
   #findSyntaxRef(name: string): SyntaxRef | undefined {

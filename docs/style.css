@@ -36,10 +36,13 @@
   --weight-bold: 650;
   --weight-extrabold: 850;
 
-  --font-serif: "Literata Variable", "Sitka Text", Georgia, ui-serif;
+  --font-serif: "Literata Variable", "Sitka Text", ui-serif, Georgia;
   --font-mono:
     "Iosevka Etoile", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
     "Courier New";
+  --font-sans:
+    "Libertinus Sans", "Libertinus Math", ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans";
 
   --line-height: 1.65;
 
@@ -597,6 +600,11 @@ a:is(:hover, :focus, :active, :focus) .heading-level {
     border-left-color: transparent;
     border-right-color: transparent;
   }
+}
+
+.type-expr {
+  font-family: var(--font-sans), sans-serif;
+  font-size: 1.1em;
 }
 
 .colour\:accent-12 {

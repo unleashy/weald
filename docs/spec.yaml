@@ -1,23 +1,13 @@
 ---
 ◊meta:
   title: Weald 🌳 Language Specification
-  version: 0.3.0
+  version: 0.5.0
 ---
 Introduction:
   - >
     Weald is a new programming language taking inspiration from C#, Rust, Ruby, and TypeScript.
 
     This document describes the language—mostly informally.
----
-Type system:
-  - >
-    Weald is a statically typed language, where every value has a single defined ◊i[type],
-    determined at compile time. The type denotes the interpretation of a value and defines what
-    operations can be performed on the value. The ◊i[type system] ascribes types to values, and the
-    ◊i[type checker] verifies the correctness of operations given types.
-
-  - ◊note: >
-      TODO 😔
 ---
 Lexical elements:
   - >
@@ -201,7 +191,7 @@ Lexical elements:
             - "`false`"
       - >
         Boolean literals represent a logical value that can be either true or false. The value is of
-        type Bool.
+        type ◊ty[◊[Bool]].
 
   - Integers:
       - ◊syn:
@@ -234,17 +224,18 @@ Lexical elements:
         context.
 
       - >
-        ◊b[Types of integers.] The type of an integer can be either Nat, Int, or Byte.
+        ◊b[Types of integers.] The type of an integer can be either ◊ty[Nat], ◊ty[Int], or
+        ◊ty[Byte].
       - ◊dl:
-          Nat: unsigned 64-bit value ranging from 0 to 2◊sup[64 − 1]
-          Int: signed 64-bit value ranging from −2◊sup[63] to 2◊sup[63 − 1]
-          Byte: unsigned 8-bit value ranging from 0 to 255
+          ◊ty[Nat]: unsigned 64-bit value ranging from 0 to 2◊sup[64 − 1]
+          ◊ty[Int]: signed 64-bit value ranging from −2◊sup[63] to 2◊sup[63 − 1]
+          ◊ty[Byte]: unsigned 8-bit value ranging from 0 to 255
       - >
         This type is inferred from context:
       - ◊ul:
-          - If the literal has a negative sign, the type is forced to Int.
+          - If the literal has a negative sign, the type is forced to ◊ty[Int].
           - If the type can ◊i[uniquely] be determined from context, it is that type.
-          - If the context under-constrains the type, it defaults to Nat.
+          - If the context under-constrains the type, it defaults to ◊ty[Nat].
           - If the context over-constrains the type, it is an error.
 
       - >
@@ -259,7 +250,7 @@ Lexical elements:
 
       - ◊rationale: >
           ◊b[The types.] The three integer types were chosen for their usefulness. The odd one out
-          is Byte; that one is useful because dealing with files in arbitrary formats is very
+          is ◊ty[Byte]; that one is useful because dealing with files in arbitrary formats is very
           common, and having a dedicated type that isn’t oversized for this purpose is useful.
 
           It’s useful to have a full set of integer types like C or Rust, that include “midway”
@@ -296,7 +287,7 @@ Lexical elements:
           FloatExponent: "`e` Sign? IntegerDec"
       - >
         Floats represent rational numbers and approximations of irrational numbers. The value is of
-        type Float.
+        type ◊ty[Float].
 
         The ◊syn[Char] immediately after ◊syn[Float] must not be ◊syn[NameContinue] or
         ◊syn[NameMedial].
@@ -385,7 +376,7 @@ Lexical elements:
           EscapeContinuation: Newline Whitespace*
       - >
         A string is a sequence of zero or more Unicode code points, resolving to a ◊i[content]
-        value. The value is of type String.
+        value. The value is of type ◊ty[String].
 
         Strings have with multiple literal forms, described below.
 
@@ -653,3 +644,122 @@ Syntax:
           Decl:
             - "`let` NL Name NL `=` NL Expr"
       - A declaration puts a new name into scope, with a defined value.
+---
+Names and scoping:
+  - >
+    Weald follows lexical scoping.
+
+    ◊b[Scopes.] Blocks declare new scopes. The scope guards every declaration within the braces of
+    the block, and the declarations within the braces are only visible within the block. The top
+    level of a program forms an implicit block, ranging from the start of the program to the very
+    end.
+
+    ◊b[Shadowing.] Declaring a name in a scope which already has a declaration of the same name is
+    called shadowing; it is fully allowed and supported.
+
+    ◊b[Finding a name’s declaration.] When a name is encountered, it always refers to the closest
+    preceding declaration of the same name in the innermost block enclosing the statement where the
+    name is used, or any enclosing parent blocks.
+
+    Breaking this down, the ◊i[closest preceding declaration] is the ◊[declaration][declarations]
+    that is nearest to the name, if you were to search backwards in the syntax tree starting from
+    the name; declarations following the name are not considered.
+
+    The ◊i[innermost block enclosing the statement] is the block that contains the statement in
+    which the name is used; this means that a declaration in the same statement is not considered in
+    the search.
+
+    ◊i[Any enclosing parent blocks] refers to how scopes inherit their parent’s declarations: a name
+    can refer to a declaration in any block it is enclosed within, but not any sibling or child
+    blocks.
+
+    If a declaration cannot be found, it is a compile time error.
+
+    ◊b[Evaluation of a name.] Given a name and its declaration, the name evaluates to the value
+    given in its declaration.
+---
+Type system:
+  - >
+    Weald is a statically typed language, where every value has a single defined ◊i[type],
+    determined at compile time. The type denotes the interpretation of a value and defines what
+    operations can be performed on the value. The ◊i[type system] ascribes types to values, and the
+    ◊i[type checker] verifies the correctness of operations given types.
+
+  - ◊note: By convention, all type names are written in ◊ty[Upper-kebab-case].
+
+  - >
+    ◊b[Taxonomy.] There are two groups of types: base types and user types. Base types are provided
+    by the language, cannot be redefined in any way, and are treated specially by the compiler. User
+    types extend other types with user-defined behaviour.
+
+    ◊b[Inference.] The type of an expression is ◊i[inferred] from itself and its context. The user
+    does not normally have to specify the type of expressions or declarations.
+
+    ◊b[Checking.] Exclusively at compile-time, the compiler verifies all the operations in the
+    program are ◊i[well-typed]; that is, the types they receive and return comply with those
+    inferred and expected by the operations. If an expression cannot be considered well-typed, it is
+    an error.
+
+    ◊b[Conversions.] Values of a specific type may be converted to another type depending on their
+    compatibility. Each type defines its own conversion rules. Conversions may be ◊i[explicit]—must
+    be directly denoted by the user—or ◊i[implicit]—used by the compiler automatically.
+
+  - Base types:
+      - >
+        The base types are:
+      - ◊ul:
+          - The boolean type (◊ty[Bool])
+          - The number types (◊ty[Int], ◊ty[Nat], ◊ty[Byte], and ◊ty[Float])
+          - The text type (◊ty[String])
+          - The unit type (◊ty[Unit])
+          - The bottom type (◊ty[Void])
+
+      - ◊h ◊ty[Bool]:
+          - >
+            The ◊i[boolean] type is the type of ◊[Boolean][Booleans] expressions. It can be negated
+            with ◊code[!] and compared for equality with itself.
+
+      - ◊h ◊ty[Int], ◊ty[Nat], and ◊ty[Byte]:
+          - >
+            Given their very similar behaviour, these types are united into a single “integral
+            number” umbrella. ◊ty[Byte] is a subtype of ◊ty[Nat] and ◊ty[Int], but ◊ty[Nat] and
+            ◊ty[Int] must be explicitly converted between each other, as they do not have the same
+            range. They can all be negated with ◊code[-], no-op with ◊code[+], compared for equality
+            between each other, and for identical types, the arithmetic operations are defined.
+
+      - ◊h ◊ty[Float]:
+          - >
+            The ◊i[floating point] type is the type of ◊[Float][Floats] expressions. They can do the
+            same operations as integrals with themselves, but converting a float to an integral or
+            vice versa is explicit.
+
+      - ◊h ◊ty[Unit]:
+          - >
+            The ◊i[unit] type, having one value, represented as ◊code[()] in code. This is the type
+            of expressions that do not produce a meaningful value; for example, an ◊[if][if
+            expressions] without an ◊syn[else][Else] block returns ◊ty[Unit]. ◊[Declarations] also
+            produce ◊ty[Unit].
+
+          - ◊note: This is similar (but not equal to) ◊code[void] in C-like languages.
+
+      - ◊h ◊ty[Void]:
+          - >
+            The ◊i[bottom] type. When an expression has a syntax or type error, this is the type it
+            takes. The never type can be implicitly converted to any other type. The bottom type has
+            no values and cannot actually be produced at run time, so it represents termination: the
+            immediate end of execution.
+
+          - ◊note: This is like ◊code[!] in Rust, or ◊code[noreturn] in D.
+
+  - User types:
+      - ◊note: TODO – Not implemented yet
+
+  - Inference and checking:
+      - >
+        Types are automatically determined (inferred) in a depth-first manner. The leaves of the
+        syntax tree—the ◊[literals]—are immediately ascribed to be of the type they represent. Then,
+        parents of those literals use the types recovered from their children to determine their own
+        type and so on until a single type is ascribed to the whole expression.
+
+        During this process, checking is performed; the inferred types are evaluated against the
+        expected types of operations, and if a mismatch is found, an error is produced.
